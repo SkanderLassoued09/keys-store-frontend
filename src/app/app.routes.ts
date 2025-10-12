@@ -22,6 +22,11 @@ import { MachineComponent } from "./machine/machine.component";
 import { EmployeeComponent } from "./employee/employee.component";
 import { ProvidersComponent } from "./providers/providers.component";
 import { ClientComponent } from "./client/client.component";
+import { ArticleListComponent } from "./article-list/article-list.component";
+import { EmployeeListComponent } from "./employee-list/employee-list.component";
+import { MachineListComponent } from "./machine-list/machine-list.component";
+import { ProviderListComponent } from "./provider-list/provider-list.component";
+import { ClientListComponent } from "./client-list/client-list.component";
 
 export const routes: Routes = [
   {
@@ -64,6 +69,37 @@ export const routes: Routes = [
         title:
           "Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template",
       },
+      {
+        path: "client-list",
+        component: ClientListComponent,
+        title:
+          "Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template",
+      },
+      {
+        path: "provider-list",
+        component: ProviderListComponent,
+        title:
+          "Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template",
+      },
+      {
+        path: "machine-list",
+        component: MachineListComponent,
+        title:
+          "Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template",
+      },
+      {
+        path: "employee-list",
+        component: EmployeeListComponent,
+        title:
+          "Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template",
+      },
+      {
+        path: "article-list",
+        component: ArticleListComponent,
+        title:
+          "Angular Profile Dashboard | TailAdmin - Angular Admin Dashboard Template",
+      },
+
       {
         path: "form-elements",
         component: FormElementsComponent,

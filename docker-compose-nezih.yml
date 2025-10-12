@@ -1,14 +1,14 @@
-version: '3.5'
+version: "3.5"
 services:
   keys-nezih-frontend:
     image: node-20-angular
-    container_name: 'keys-nezih-frontend'
-    command: ['tail', '-f', '/dev/null']
+    container_name: "keys-nezih-frontend"
+    command: ["tail", "-f", "/dev/null"]
     working_dir: /app
     ports:
-      - '4200:4200'
+      - "4200:4200"
     volumes:
-      - '.:/app' 
+      - ".:/app"
 
 networks:
   default:
