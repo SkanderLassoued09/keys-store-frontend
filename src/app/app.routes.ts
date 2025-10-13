@@ -27,6 +27,7 @@ import { EmployeeListComponent } from "./employee-list/employee-list.component";
 import { MachineListComponent } from "./machine-list/machine-list.component";
 import { ProviderListComponent } from "./provider-list/provider-list.component";
 import { ClientListComponent } from "./client-list/client-list.component";
+import { ServiceOrderViewComponent } from "./service-order-view/service-order-view.component";
 
 export const routes: Routes = [
   {
@@ -185,6 +186,12 @@ export const routes: Routes = [
   {
     path: "signup",
     component: SignUpComponent,
+    title:
+      "Angular Sign Up Dashboard | TailAdmin - Angular Admin Dashboard Template",
+  },
+  {
+    path: "service-order-view",
+    component: ServiceOrderViewComponent,
     title:
       "Angular Sign Up Dashboard | TailAdmin - Angular Admin Dashboard Template",
   },
