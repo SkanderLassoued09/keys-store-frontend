@@ -17,7 +17,7 @@ import { InputFieldComponent } from "../../shared/components/form/input/input-fi
 })
 
 
-export class ArticleComponent  {
+export class ArticlesComponent  {
    
   }
 
