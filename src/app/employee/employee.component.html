@@ -1,4 +1,4 @@
-<app-component-card title="Default Inputs">
+<app-component-card title="Création employer">
   <div class="space-y-6">
 
     <div>
@@ -16,15 +16,15 @@
       <app-input-field type="text" id="input" />
     </div>
 
-    <div>
-      <app-label for="input">Pourcentage gain Service</app-label>
-      <app-input-field type="text" id="input" />
-    </div>
+   <div>
+  <app-label for="pourcentageService">Pourcentage gain sur Service</app-label>
+  <app-input-field type="number" id="pourcentageService" placeholder="%" />
+</div>
 
-     <div>
-      <app-label for="input">Pourcentage gain Article</app-label>
-      <app-input-field type="text" id="input" />
-    </div>
+<div>
+  <app-label for="pourcentageArticle">Pourcentage gain d'Article</app-label>
+  <app-input-field type="number" id="pourcentageArticle" placeholder="%" />
+</div>
    
   </div>
 </app-component-card>
