@@ -10,21 +10,91 @@
       <app-input-field type="text" id="reference" placeholder="Référence unique" />
     </div>
 
-    <div>
+    <!-- ✅ Dropdown Type -->
+    <div class="relative">
       <app-label for="type">Type</app-label>
-      <app-input-field type="text" id="type" placeholder="Type d'article" />
+      <button
+        class="dropdown-toggle w-full border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-left flex justify-between items-center"
+        (click)="toggleDropdown('type')"
+      >
+        {{ selectedType }}
+        <span class="ml-2">▼</span>
+      </button>
+
+      <app-dropdown
+        [isOpen]="isTypeOpen"
+        (close)="isTypeOpen = false"
+        className="w-full"
+      >
+        <ul class="p-2">
+          <li
+            *ngFor="let type of typeList"
+            (click)="selectValue('type', type)"
+            class="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          >
+            {{ type }}
+          </li>
+        </ul>
+      </app-dropdown>
     </div>
 
-    <div>
+    <!-- ✅ Dropdown Catégorie -->
+    <div class="relative">
       <app-label for="categorie">Catégorie</app-label>
-      <app-input-field type="text" id="categorie" placeholder="Catégorie (clé, machine, accessoire...)" />
+      <button
+        class="dropdown-toggle w-full border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-left flex justify-between items-center"
+        (click)="toggleDropdown('categorie')"
+      >
+        {{ selectedCategorie }}
+        <span class="ml-2">▼</span>
+      </button>
+
+      <app-dropdown
+        [isOpen]="isCategorieOpen"
+        (close)="isCategorieOpen = false"
+        className="w-full"
+      >
+        <ul class="p-2">
+          <li
+            *ngFor="let cat of categorieList"
+            (click)="selectValue('categorie', cat)"
+            class="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          >
+            {{ cat }}
+          </li>
+        </ul>
+      </app-dropdown>
     </div>
 
-    <div>
+    <!-- ✅ Dropdown Fournisseur -->
+    <div class="relative">
       <app-label for="fournisseur">Fournisseur</app-label>
-      <app-input-field type="text" id="fournisseur" placeholder="Nom du fournisseur" />
+      <button
+        class="dropdown-toggle w-full border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-left flex justify-between items-center"
+        (click)="toggleDropdown('fournisseur')"
+      >
+        {{ selectedFournisseur }}
+        <span class="ml-2">▼</span>
+      </button>
+
+      <app-dropdown
+        [isOpen]="isFournisseurOpen"
+        (close)="isFournisseurOpen = false"
+        className="w-full"
+      >
+        <ul class="p-2">
+          <li
+            *ngFor="let fournisseur of fournisseurList"
+            (click)="selectValue('fournisseur', fournisseur)"
+            class="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          >
+            {{ fournisseur }}
+          </li>
+        </ul>
+      </app-dropdown>
     </div>
 
+    <!-- ✅ Continue with numeric inputs -->
     <div>
       <app-label for="prixAchat">Prix Achat</app-label>
       <app-input-field type="number" id="prixAchat" placeholder="Prix d'achat" />
