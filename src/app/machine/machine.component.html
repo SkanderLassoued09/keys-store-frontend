@@ -1,20 +1,57 @@
 <app-component-card title="Creation Machine">
   <div class="space-y-6">
-
     <div>
       <app-label for="input">Nom Machine</app-label>
-      <app-input-field type="text" id="input"  />
-    </div>
-
-    <div>
-      <app-label for="inputTwo">Input with Placeholder</app-label>
-      <app-input-field type="text" id="inputTwo" />
-    </div>
-    
-    <div>
-      <app-label for="input">Input</app-label>
       <app-input-field type="text" id="input" />
     </div>
 
+    <div>
+      <app-label for="price">Price</app-label>
+      <app-input-field type="number" id="price" placeholder="Enter price" />
+    </div>
+
+    <div>
+      <app-label for="purchaseDate">Purchase Date</app-label>
+      <app-input-field type="date" id="purchaseDate" />
+    </div>
+
+    <div>
+      <app-label for="inShopDate">In Shop Date</app-label>
+      <app-input-field type="date" id="inShopDate" />
+    </div>
+
+    <!-- ✅ Dropdown for Status -->
+    <div class="relative">
+      <app-label for="status">Status</app-label>
+
+      <button
+        class="dropdown-toggle w-full border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-left flex justify-between items-center"
+        (click)="toggleStatusDropdown()"
+      >
+        {{ selectedStatus }}
+        <span class="ml-2">▼</span>
+      </button>
+
+      <app-dropdown
+        [isOpen]="isStatusOpen"
+        (close)="isStatusOpen = false"
+        className="w-full"
+      >
+        <ul class="p-2">
+          <li
+            *ngFor="let status of statusList"
+            (click)="selectStatus(status)"
+            class="cursor-pointer px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          >
+            {{ status }}
+          </li>
+        </ul>
+      </app-dropdown>
+    </div>
+
+    <div>
+      <app-label for="image">Image</app-label>
+      <app-input-field type="file" id="image" accept="image/*" />
+    </div>
   </div>
 </app-component-card>
