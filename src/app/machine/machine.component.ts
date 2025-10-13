@@ -21,7 +21,7 @@ export class MachineComponent {
   isStatusOpen = false;
   selectedStatus = "Active";
 
-  statusList = ["Active", "In Maintenance", "Out of Service", "Sold"];
+  statusList = ["Active", "Maintenance", "Hors Service", "Vendue"];
 
   toggleStatusDropdown() {
     this.isStatusOpen = !this.isStatusOpen;
