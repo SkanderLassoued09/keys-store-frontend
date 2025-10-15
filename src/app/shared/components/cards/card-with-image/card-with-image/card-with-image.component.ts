@@ -6,6 +6,7 @@ import { CardThreeComponent } from '../card-three/card-three.component';
 
 @Component({
   selector: 'app-card-with-image',
+  standalone: true, // ✅ add this line
   imports: [
     ComponentCardComponent,
     CardOneComponent,
@@ -15,6 +16,4 @@ import { CardThreeComponent } from '../card-three/card-three.component';
   templateUrl: './card-with-image.component.html',
   styles: ``
 })
-export class CardWithImageComponent {
-
-}
+export class CardWithImageComponent {}
