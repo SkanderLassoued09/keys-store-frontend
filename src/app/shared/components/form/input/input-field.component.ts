@@ -1,8 +1,8 @@
-import { CommonModule } from '@angular/common';
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from "@angular/common";
+import { Component, Input, Output, EventEmitter } from "@angular/core";
 
 @Component({
-  selector: 'app-input-field',
+  selector: "app-input-field",
   imports: [CommonModule],
   template: `
     <div class="relative">
@@ -21,12 +21,14 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
       />
 
       @if (hint) {
-      <p class="mt-1.5 text-xs"
+      <p
+        class="mt-1.5 text-xs"
         [ngClass]="{
           'text-error-500': error,
           'text-success-500': success,
           'text-gray-500': !error && !success
-        }">
+        }"
+      >
         {{ hint }}
       </p>
       }
@@ -34,12 +36,11 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
   `,
 })
 export class InputFieldComponent {
-
-  @Input() type: string = 'text';
-  @Input() id?: string = '';
-  @Input() name?: string = '';
-  @Input() placeholder?: string = '';
-  @Input() value: string | number = '';
+  @Input() type: string = "text";
+  @Input() id?: string = "";
+  @Input() name?: string = "";
+  @Input() placeholder?: string = "";
+  @Input() value: string | number = "";
   @Input() min?: string;
   @Input() max?: string;
   @Input() step?: number;
@@ -47,7 +48,7 @@ export class InputFieldComponent {
   @Input() success: boolean = false;
   @Input() error: boolean = false;
   @Input() hint?: string;
-  @Input() className: string = '';
+  @Input() className: string = "";
 
   @Output() valueChange = new EventEmitter<string | number>();
 
@@ -68,6 +69,6 @@ export class InputFieldComponent {
 
   onInput(event: Event) {
     const input = event.target as HTMLInputElement;
-    this.valueChange.emit(this.type === 'number' ? +input.value : input.value);
+    this.valueChange.emit(this.type === "number" ? +input.value : input.value);
   }
 }

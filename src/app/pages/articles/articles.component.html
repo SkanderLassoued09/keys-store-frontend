@@ -1,13 +1,25 @@
 <app-component-card title="Création Article">
   <div class="space-y-6">
+    <!-- Nom -->
     <div>
       <app-label for="nom">Nom</app-label>
-      <app-input-field type="text" id="nom" placeholder="Nom de l'article" />
+      <app-input-field
+        type="text"
+        id="nom"
+        placeholder="Nom de l'article"
+        (valueChange)="updateArticle('nom', $event)"
+      />
     </div>
 
+    <!-- Référence -->
     <div>
       <app-label for="reference">Référence</app-label>
-      <app-input-field type="text" id="reference" placeholder="Référence unique" />
+      <app-input-field
+        type="text"
+        id="reference"
+        placeholder="Référence unique"
+        (valueChange)="updateArticle('reference', $event)"
+      />
     </div>
 
     <!-- ✅ Dropdown Type -->
@@ -94,25 +106,50 @@
       </app-dropdown>
     </div>
 
-    <!-- ✅ Continue with numeric inputs -->
+    <!-- ✅ Numeric Inputs -->
     <div>
       <app-label for="prixAchat">Prix Achat</app-label>
-      <app-input-field type="number" id="prixAchat" placeholder="Prix d'achat" />
+      <app-input-field
+        type="number"
+        id="prixAchat"
+        placeholder="Prix d'achat"
+        (valueChange)="updateArticle('prixAchat', $event)"
+      />
     </div>
 
     <div>
       <app-label for="prixVente">Prix Vente</app-label>
-      <app-input-field type="number" id="prixVente" placeholder="Prix de vente" />
+      <app-input-field
+        type="number"
+        id="prixVente"
+        placeholder="Prix de vente"
+        (valueChange)="updateArticle('prixVente', $event)"
+      />
     </div>
 
     <div>
       <app-label for="quantiteStock">Quantité en Stock</app-label>
-      <app-input-field type="number" id="quantiteStock" placeholder="Quantité en stock" />
+      <app-input-field
+        type="number"
+        id="quantiteStock"
+        placeholder="Quantité en stock"
+        (valueChange)="updateArticle('quantiteStock', $event)"
+      />
     </div>
 
     <div>
       <app-label for="quantiteBoutique">Quantité Boutique</app-label>
-      <app-input-field type="number" id="quantiteBoutique" placeholder="Quantité en boutique" />
+      <app-input-field
+        type="number"
+        id="quantiteBoutique"
+        placeholder="Quantité en boutique"
+        (valueChange)="updateArticle('quantiteBoutique', $event)"
+      />
+    </div>
+    <div class="flex items-center gap-5">
+      <app-button size="sm" variant="primary" (btnClick)="saveArticle()">
+        Save
+      </app-button>
     </div>
   </div>
 </app-component-card>
