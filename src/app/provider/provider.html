@@ -1,0 +1,178 @@
+<p-toolbar class="mb-6">
+    <ng-template #start>
+        <p-button label="New" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
+        <!-- <p-button severity="danger" label="Delete" icon="pi pi-trash" outlined (onClick)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length" /> -->
+    </ng-template>
+
+    <ng-template #end>
+        <p-fileUpload mode="basic" accept="image/*" [maxFileSize]="1000000" label="Import" chooseLabel="Import" auto customUpload class="mr-2 inline-block" [chooseButtonProps]="{ severity: 'secondary' }" />
+        <p-button label="Export" icon="pi pi-upload" severity="secondary" (onClick)="exportCSV()" />
+    </ng-template>
+</p-toolbar>
+
+<p-table
+    #dt
+    [value]="products"
+    [rows]="10"
+    [columns]="cols"
+    [paginator]="true"
+    [globalFilterFields]="['name', 'country.name', 'representative.name', 'status']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    [(selection)]="selectedProducts"
+    [rowHover]="true"
+    dataKey="id"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+    [showCurrentPageReport]="true"
+>
+    <ng-template #caption>
+        <div class="flex items-center justify-between">
+            <h5 class="m-0">Manage Products</h5>
+            <p-iconfield>
+                <p-inputicon class="pi pi-search" />
+                <input pInputText type="text" placeholder="Search..." />
+            </p-iconfield>
+        </div>
+    </ng-template>
+    <ng-template #header>
+        <tr>
+            <th style="width: 3rem">
+                <p-tableHeaderCheckbox />
+            </th>
+            <th style="min-width: 16rem">Code</th>
+            <th pSortableColumn="name" style="min-width: 16rem">
+                <div class="flex items-center gap-2">
+                    Name
+                    <p-sortIcon field="name" />
+                </div>
+            </th>
+            <th>Image</th>
+            <th pSortableColumn="price" style="min-width: 8rem">
+                <div class="flex items-center gap-2">
+                    Price
+                    <p-sortIcon field="price" />
+                </div>
+            </th>
+            <th pSortableColumn="category" style="min-width: 10rem">
+                <div class="flex items-center gap-2">
+                    Category
+                    <p-sortIcon field="category" />
+                </div>
+            </th>
+            <th pSortableColumn="rating" style="min-width: 12rem">
+                <div class="flex items-center gap-2">
+                    Reviews
+                    <p-sortIcon field="rating" />
+                </div>
+            </th>
+            <th pSortableColumn="inventoryStatus" style="min-width: 12rem">
+                <div class="flex items-center gap-2">
+                    Status
+                    <p-sortIcon field="inventoryStatus" />
+                </div>
+            </th>
+            <th style="min-width: 12rem"></th>
+        </tr>
+    </ng-template>
+    <ng-template #body let-product>
+        <tr>
+            <td style="width: 3rem">
+                <p-tableCheckbox [value]="product" />
+            </td>
+            <td style="min-width: 12rem">{{ product.code }}</td>
+            <td style="min-width: 16rem">{{ product.name }}</td>
+            <td>
+                <img [src]="'https://primefaces.org/cdn/primeng/images/demo/product/' + product.image" [alt]="product.name" style="width: 64px" class="rounded" />
+            </td>
+            <td>{{ product.price | currency: 'USD' }}</td>
+            <td>{{ product.category }}</td>
+            <td>
+                <p-rating [(ngModel)]="product.rating" [readonly]="true" />
+            </td>
+            <td>
+                <!-- <p-tag [value]="product.inventoryStatus" [severity]="getSeverity('')" /> -->
+            </td>
+            <td>
+                <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editProduct(product)" />
+                <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" (click)="deleteProduct(product)" />
+            </td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<p-dialog [(visible)]="articleDialog" [style]="{ width: '500px' }" header="Article Details" [modal]="true" [closable]="true">
+    <form [formGroup]="articleForm" class="flex flex-col gap-5" (ngSubmit)="onSubmit()">
+        <!-- 🔹 Name -->
+        <div>
+            <label for="name" class="block font-bold mb-2">Name</label>
+            <input id="name" type="text" pInputText formControlName="name" placeholder="Enter article name" />
+            <small class="text-red-500" *ngIf="submitted && articleForm.get('name')?.invalid"> Name is required. </small>
+        </div>
+
+        <!-- 🔹 Reference -->
+        <div>
+            <label for="reference" class="block font-bold mb-2">Reference</label>
+            <input id="reference" type="text" pInputText formControlName="reference" placeholder="Enter reference" />
+        </div>
+
+        <!-- 🔹 Purchase Price -->
+        <div>
+            <label for="purchasePrice" class="block font-bold mb-2">Purchase Price</label>
+            <p-inputNumber id="purchasePrice" formControlName="purchasePrice" mode="decimal" [minFractionDigits]="2"></p-inputNumber>
+            <small class="text-red-500" *ngIf="submitted && articleForm.get('purchasePrice')?.invalid"> Purchase price is required. </small>
+        </div>
+
+        <!-- 🔹 Selling Price -->
+        <div>
+            <label for="sellingrice" class="block font-bold mb-2">Selling Price</label>
+            <p-inputNumber id="sellingrice" formControlName="sellingrice" mode="decimal" [minFractionDigits]="2"></p-inputNumber>
+            <small class="text-red-500" *ngIf="submitted && articleForm.get('sellingrice')?.invalid"> Selling price is required. </small>
+        </div>
+
+        <!-- 🔹 Stock Quantity -->
+        <div>
+            <label for="stockQuantity" class="block font-bold mb-2">Stock Quantity</label>
+            <p-inputNumber id="stockQuantity" formControlName="stockQuantity"></p-inputNumber>
+        </div>
+
+        <!-- 🔹 Shop Quantity -->
+        <div>
+            <label for="shopQuantity" class="block font-bold mb-2">Shop Quantity</label>
+            <p-inputNumber id="shopQuantity" formControlName="shopQuantity"></p-inputNumber>
+        </div>
+
+        <!-- 🔹 Provider (Fournisseur) -->
+        <div>
+            <label for="fournisseur" class="block font-bold mb-2">Provider</label>
+            <p-dropdown id="fournisseur" formControlName="fournisseur" optionLabel="name" optionValue="_id" placeholder="Select a provider"></p-dropdown>
+        </div>
+
+        <!-- 🔹 Type -->
+        <div>
+            <span class="block font-bold mb-2">Type</span>
+            <div class="flex flex-wrap gap-3">
+                <div class="flex items-center gap-2">
+                    <p-radioButton name="type" formControlName="type"></p-radioButton>
+                    <label>hello</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔹 Category -->
+        <div>
+            <span class="block font-bold mb-2">Category</span>
+            <div class="flex flex-wrap gap-3">
+                <div class="flex items-center gap-2">
+                    <p-radioButton name="category" formControlName="category"></p-radioButton>
+                    <label>hello</label>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <ng-template #footer>
+        <p-button label="Cancel" icon="pi pi-times" text (click)="hideDialog()" />
+        <p-button label="Save" icon="pi pi-check" (click)="onSubmit()" />
+    </ng-template>
+</p-dialog>
+
+<p-confirmDialog [style]="{ width: '450px' }" />
