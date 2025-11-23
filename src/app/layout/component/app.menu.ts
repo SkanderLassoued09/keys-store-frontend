@@ -53,7 +53,7 @@ export class AppMenu implements OnInit, OnDestroy {
                 },
                 {
                     label: 'Employeurs',
-                    items: [{ label: 'List Employeurs', icon: 'pi pi-fw pi-home', routerLink: ['/pages/employee'] }]
+                    items: [{ label: 'List Employés', icon: 'pi pi-fw pi-home', routerLink: ['/pages/employee'] }]
                 },
                 {
                     label: 'Client',

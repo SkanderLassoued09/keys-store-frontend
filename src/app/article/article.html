@@ -40,7 +40,14 @@
             </th>
             <th style="min-width: 16rem">Code</th>
             <th pSortableColumn="name" style="min-width: 16rem">
+
+
+
                 <div class="flex items-center gap-2">
+
+
+
+
                     Name
                     <p-sortIcon field="name" />
                 </div>
@@ -99,8 +106,40 @@
     </ng-template>
 </p-table>
 
-<p-dialog [(visible)]="articleDialog" [style]="{ width: '500px' }" header="Article Details" [modal]="true" [closable]="true">
+<p-dialog [(visible)]="articleDialog" [style]="{ width: '500px' }" header="Creation d'article" [modal]="true" [closable]="true">
     <form [formGroup]="articleForm" class="flex flex-col gap-5" (ngSubmit)="onSubmit()">
+
+<div class="flex flex-wrap gap-4">
+    <div class="flex items-center">
+        <p-radiobutton name="type" value="Keys" formControlName="type" inputId="type1" />
+        <label for="type1" class="ml-2">Keys</label>
+    </div>
+
+    <div class="flex items-center">
+        <p-radiobutton name="type" value="CarKeys" formControlName="type" inputId="type2" />
+        <label for="type2" class="ml-2">Car Keys</label>
+    </div>
+
+    <div class="flex items-center">
+        <p-radiobutton name="type" value="Remote" formControlName="type" inputId="type3" />
+        <label for="type3" class="ml-2">Remote</label>
+    </div>
+
+    <div class="flex items-center">
+        <p-radiobutton name="type" value="stamp" formControlName="type" inputId="type4" />
+        <label for="type4" class="ml-2">Stamp</label>
+    </div>
+
+    <div class="flex items-center">
+        <p-radiobutton name="type" value="KeyChain" formControlName="type" inputId="type5" />
+        <label for="type5" class="ml-2">Key Chain</label>
+    </div>
+
+    <div class="flex items-center">
+        <p-radiobutton name="type" value="Other" formControlName="type" inputId="type6" />
+        <label for="type6" class="ml-2">Other</label>
+    </div>
+</div>
         <!-- 🔹 Name -->
         <div>
             <label for="name" class="block font-bold mb-2">Name</label>
@@ -143,30 +182,15 @@
         <!-- 🔹 Provider (Fournisseur) -->
         <div>
             <label for="fournisseur" class="block font-bold mb-2">Provider</label>
-            <p-dropdown id="fournisseur" formControlName="fournisseur" optionLabel="name" optionValue="_id" placeholder="Select a provider"></p-dropdown>
+        <p-select [options]="cities" [(ngModel)]="selectedCity" optionLabel="name" placeholder="Choisir Fournisseur" class="w-full md:w-56" />
         </div>
 
-        <!-- 🔹 Type -->
         <div>
-            <span class="block font-bold mb-2">Type</span>
-            <div class="flex flex-wrap gap-3">
-                <div class="flex items-center gap-2">
-                    <p-radioButton name="type" formControlName="type"></p-radioButton>
-                    <label>hello</label>
-                </div>
-            </div>
+            <label for="emplacement" class="block font-bold mb-2">Emplacement</label>
+            <input id="emplacement" type="text" pInputText formControlName="emplacement" placeholder="Enter emplacement" />
         </div>
-
-        <!-- 🔹 Category -->
-        <div>
-            <span class="block font-bold mb-2">Category</span>
-            <div class="flex flex-wrap gap-3">
-                <div class="flex items-center gap-2">
-                    <p-radioButton name="category" formControlName="category"></p-radioButton>
-                    <label>hello</label>
-                </div>
-            </div>
-        </div>
+      
+       
     </form>
 
     <ng-template #footer>

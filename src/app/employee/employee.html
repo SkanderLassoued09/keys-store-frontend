@@ -99,74 +99,28 @@
     </ng-template>
 </p-table>
 
-<p-dialog [(visible)]="articleDialog" [style]="{ width: '500px' }" header="Article Details" [modal]="true" [closable]="true">
-    <form [formGroup]="articleForm" class="flex flex-col gap-5" (ngSubmit)="onSubmit()">
-        <!-- 🔹 Name -->
+<p-dialog [(visible)]="articleDialog" [style]="{ width: '500px' }" header="Creation Employé" [modal]="true" [closable]="true">
+    <form [formGroup]="employeeForm" class="flex flex-col gap-5" (ngSubmit)="onSubmit()">
+      
+  <!-- 🔹 Name -->
         <div>
             <label for="name" class="block font-bold mb-2">Name</label>
             <input id="name" type="text" pInputText formControlName="name" placeholder="Enter article name" />
-            <small class="text-red-500" *ngIf="submitted && articleForm.get('name')?.invalid"> Name is required. </small>
+            <small class="text-red-500" *ngIf="submitted && employeeForm.get('name')?.invalid"> Name is required. </small>
+        </div>
+ <!-- 🔹 Name -->
+        <div>
+            <label for="name" class="block font-bold mb-2">Last Name</label>
+            <input id="name" type="lastName" pInputText formControlName="lastName" placeholder="Enter employee lastName" />
+            <small class="text-red-500" *ngIf="submitted && employeeForm.get('lastName')?.invalid"> lastName is required. </small>
+        </div>
+        <!-- 🔹 Name -->
+        <div>
+            <label for="name" class="block font-bold mb-2">Phone number</label>
+            <input id="name" type="text" pInputText formControlName="phone" placeholder="Enter article phone" />
+            <small class="text-red-500" *ngIf="submitted && employeeForm.get('phone')?.invalid"> phone is required. </small>
         </div>
 
-        <!-- 🔹 Reference -->
-        <div>
-            <label for="reference" class="block font-bold mb-2">Reference</label>
-            <input id="reference" type="text" pInputText formControlName="reference" placeholder="Enter reference" />
-        </div>
-
-        <!-- 🔹 Purchase Price -->
-        <div>
-            <label for="purchasePrice" class="block font-bold mb-2">Purchase Price</label>
-            <p-inputNumber id="purchasePrice" formControlName="purchasePrice" mode="decimal" [minFractionDigits]="2"></p-inputNumber>
-            <small class="text-red-500" *ngIf="submitted && articleForm.get('purchasePrice')?.invalid"> Purchase price is required. </small>
-        </div>
-
-        <!-- 🔹 Selling Price -->
-        <div>
-            <label for="sellingrice" class="block font-bold mb-2">Selling Price</label>
-            <p-inputNumber id="sellingrice" formControlName="sellingrice" mode="decimal" [minFractionDigits]="2"></p-inputNumber>
-            <small class="text-red-500" *ngIf="submitted && articleForm.get('sellingrice')?.invalid"> Selling price is required. </small>
-        </div>
-
-        <!-- 🔹 Stock Quantity -->
-        <div>
-            <label for="stockQuantity" class="block font-bold mb-2">Stock Quantity</label>
-            <p-inputNumber id="stockQuantity" formControlName="stockQuantity"></p-inputNumber>
-        </div>
-
-        <!-- 🔹 Shop Quantity -->
-        <div>
-            <label for="shopQuantity" class="block font-bold mb-2">Shop Quantity</label>
-            <p-inputNumber id="shopQuantity" formControlName="shopQuantity"></p-inputNumber>
-        </div>
-
-        <!-- 🔹 Provider (Fournisseur) -->
-        <div>
-            <label for="fournisseur" class="block font-bold mb-2">Provider</label>
-            <p-dropdown id="fournisseur" formControlName="fournisseur" optionLabel="name" optionValue="_id" placeholder="Select a provider"></p-dropdown>
-        </div>
-
-        <!-- 🔹 Type -->
-        <div>
-            <span class="block font-bold mb-2">Type</span>
-            <div class="flex flex-wrap gap-3">
-                <div class="flex items-center gap-2">
-                    <p-radioButton name="type" formControlName="type"></p-radioButton>
-                    <label>hello</label>
-                </div>
-            </div>
-        </div>
-
-        <!-- 🔹 Category -->
-        <div>
-            <span class="block font-bold mb-2">Category</span>
-            <div class="flex flex-wrap gap-3">
-                <div class="flex items-center gap-2">
-                    <p-radioButton name="category" formControlName="category"></p-radioButton>
-                    <label>hello</label>
-                </div>
-            </div>
-        </div>
     </form>
 
     <ng-template #footer>

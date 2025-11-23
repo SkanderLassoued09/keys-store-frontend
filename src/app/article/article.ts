@@ -60,22 +60,27 @@ interface ExportColumn {
     styleUrl: './article.scss'
 })
 export class Article {
+cities: any[]|undefined;
+selectedCity: any;
+articleType: any;
     onSubmit() {
         throw new Error('Method not implemented.');
     }
 
     providers: any[] = [];
-    articleForm = new FormGroup({
-        name: new FormControl('', Validators.required),
-        reference: new FormControl(''),
-        purchasePrice: new FormControl(null, Validators.required),
-        sellingrice: new FormControl(null, Validators.required),
-        stockQuantity: new FormControl(0),
-        shopQuantity: new FormControl(0),
-        fournisseur: new FormControl(null),
-        type: new FormControl('key'),
-        category: new FormControl('simple')
-    });
+
+   articleForm = new FormGroup({
+  type: new FormControl('', Validators.required),
+  name: new FormControl('', Validators.required),
+  reference: new FormControl(''),
+  purchasePrice: new FormControl(null, Validators.required),
+  sellingrice: new FormControl(null, Validators.required),
+  stockQuantity: new FormControl(null),
+  shopQuantity: new FormControl(null),
+  emplacement: new FormControl('')
+});
+
+
     articleDialog: boolean = false;
 
     products!: Product[];

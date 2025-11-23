@@ -62,16 +62,10 @@ export class Employee {
     }
 
     providers: any[] = [];
-    articleForm = new FormGroup({
+    employeeForm = new FormGroup({
         name: new FormControl('', Validators.required),
-        reference: new FormControl(''),
-        purchasePrice: new FormControl(null, Validators.required),
-        sellingrice: new FormControl(null, Validators.required),
-        stockQuantity: new FormControl(0),
-        shopQuantity: new FormControl(0),
-        fournisseur: new FormControl(null),
-        type: new FormControl('key'),
-        category: new FormControl('simple')
+        lastName: new FormControl(''),
+        phone: new FormControl(null, Validators.required),
     });
     articleDialog: boolean = false;
 
