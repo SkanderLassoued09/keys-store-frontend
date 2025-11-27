@@ -16,7 +16,7 @@ export default [
     { path: 'employee', component: Employee },
     { path: 'provider', component: Provider },
     { path: 'client', component: Client },
-    { path: 'order-service', component: OrderService },
+    // { path: 'order-service', component: OrderService },
     { path: 'empty', component: Empty },
     { path: '**', redirectTo: '/notfound' }
 ] as Routes;

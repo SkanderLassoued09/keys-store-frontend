@@ -5,7 +5,7 @@ import { API_CONFIG } from 'src/api.config';
 
 @Injectable({ providedIn: 'root' })
 export class ArticleService {
-    private readonly baseUrl = `${API_CONFIG.baseUrl}/articles`;
+    private readonly baseUrl = `${API_CONFIG.baseUrl}/article`;
 
     constructor(private readonly httpClient: HttpClient) {}
 

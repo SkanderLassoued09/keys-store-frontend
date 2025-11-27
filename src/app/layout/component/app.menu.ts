@@ -61,7 +61,7 @@ export class AppMenu implements OnInit, OnDestroy {
                 },
                 {
                     label: 'Service',
-                    items: [{ label: 'Order Service', icon: 'pi pi-fw pi-home', routerLink: ['/pages/order-service'] }]
+                    items: [{ label: 'Order Service', icon: 'pi pi-fw pi-home', routerLink: ['/order-service'] }]
                 }
             ];
         } else {
@@ -75,7 +75,6 @@ export class AppMenu implements OnInit, OnDestroy {
     }
 
     ngOnDestroy() {
-        // 🧹 Prevent memory leaks
         this.routerSub.unsubscribe();
     }
 }

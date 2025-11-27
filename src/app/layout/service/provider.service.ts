@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { API_CONFIG } from 'src/api.config';
 
 export interface Provider {
-    id?: number;
+    _id?: number;
     name: string;
     contactPerson?: string;
     email?: string;
@@ -16,7 +16,7 @@ export interface Provider {
     providedIn: 'root'
 })
 export class ProviderService {
-    private readonly baseUrl = `${API_CONFIG.baseUrl}/providers`;
+    private readonly baseUrl = `${API_CONFIG.baseUrl}/provider`;
 
     constructor(private readonly httpClient: HttpClient) {}
 

@@ -16,10 +16,10 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormControlName, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
-import { Ripple } from 'primeng/ripple';
-import { Tag } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
+import { ArticleService } from '@/layout/service/article.service';
+import { ProviderService } from '@/layout/service/provider.service';
 interface Column {
     field: string;
     header: string;
@@ -29,6 +29,17 @@ interface Column {
 interface ExportColumn {
     title: string;
     dataKey: string;
+}
+export interface Article {
+    name?: string;
+    reference?: string;
+    purchasePrice?: string;
+    sellingrice?: string;
+    stockQuantity?: number;
+    shopQuantity?: number;
+    fournisseur?: string;
+    type?: string;
+    imcategoryage?: string;
 }
 
 @Component({
@@ -60,26 +71,23 @@ interface ExportColumn {
     styleUrl: './article.scss'
 })
 export class Article {
-cities: any[]|undefined;
-selectedCity: any;
-articleType: any;
-    onSubmit() {
-        throw new Error('Method not implemented.');
-    }
+    cities: any[] | undefined;
+    selectedCity: any;
+    articleType: any;
 
     providers: any[] = [];
 
-   articleForm = new FormGroup({
-  type: new FormControl('', Validators.required),
-  name: new FormControl('', Validators.required),
-  reference: new FormControl(''),
-  purchasePrice: new FormControl(null, Validators.required),
-  sellingrice: new FormControl(null, Validators.required),
-  stockQuantity: new FormControl(null),
-  shopQuantity: new FormControl(null),
-  emplacement: new FormControl('')
-});
-
+    articleForm = new FormGroup({
+        type: new FormControl('', Validators.required),
+        name: new FormControl('', Validators.required),
+        reference: new FormControl(''),
+        purchasePrice: new FormControl(null, Validators.required),
+        sellingrice: new FormControl(null, Validators.required),
+        stockQuantity: new FormControl(null),
+        shopQuantity: new FormControl(null),
+        emplacement: new FormControl(''),
+        provider: new FormControl('')
+    });
 
     articleDialog: boolean = false;
 
@@ -87,7 +95,7 @@ articleType: any;
 
     product!: Product;
 
-    selectedProducts!: Product[] | null;
+    selectedProducts!: Article[] | null;
 
     submitted: boolean = false;
 
@@ -98,12 +106,15 @@ articleType: any;
     cols!: Column[];
 
     exportColumns!: ExportColumn[];
+    articlesList: any[] = [];
 
     constructor(
         private productService: ProductService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
-        private cd: ChangeDetectorRef
+        private cd: ChangeDetectorRef,
+        private readonly articleService: ArticleService,
+        private readonly providerService: ProviderService
     ) {}
 
     exportCSV() {
@@ -112,6 +123,47 @@ articleType: any;
 
     ngOnInit() {
         this.loadDemoData();
+        this.getAllProvidersToListThemInDropDownList();
+        this.getAllArticleForTheTable();
+    }
+    getValuesFromField() {
+        console.log('articleForm', this.articleForm.value);
+        this.articleService.createArticle(this.articleForm.value).subscribe({
+            next: (response) => {
+                console.log('Article created successfully:', response);
+                // You can reset your form or show success message
+                this.articleForm.reset();
+            },
+            error: (err) => {
+                console.error('Error creating article:', err);
+            }
+        });
+    }
+
+    getAllProvidersToListThemInDropDownList() {
+        this.providerService.getAllProviders().subscribe({
+            next: (data) => {
+                console.log('Providers:', data);
+                this.providers = data.map((provider) => {
+                    return { id: provider._id, name: provider.name };
+                });
+            },
+            error: (err) => {
+                console.error('Error loading providers:', err);
+            }
+        });
+    }
+
+    getAllArticleForTheTable() {
+        this.articleService.getAllArticles().subscribe({
+            next: (data) => {
+                this.articlesList = data;
+                console.log('Articles:', data);
+            },
+            error: (err) => {
+                console.error('Error loading articles:', err);
+            }
+        });
     }
 
     loadDemoData() {
@@ -148,32 +200,32 @@ articleType: any;
         this.articleDialog = true;
     }
 
-    deleteSelectedProducts() {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete the selected products?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
-            },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => !this.selectedProducts?.includes(val));
-                this.selectedProducts = null;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Products Deleted',
-                    life: 3000
-                });
-            }
-        });
-    }
+    // deleteSelectedProducts() {
+    //     this.confirmationService.confirm({
+    //         message: 'Are you sure you want to delete the selected products?',
+    //         header: 'Confirm',
+    //         icon: 'pi pi-exclamation-triangle',
+    //         rejectButtonProps: {
+    //             label: 'No',
+    //             severity: 'secondary',
+    //             variant: 'text'
+    //         },
+    //         acceptButtonProps: {
+    //             severity: 'danger',
+    //             label: 'Yes'
+    //         },
+    //         accept: () => {
+    //             this.products = this.products.filter((val) => !this.selectedProducts?.includes(val));
+    //             this.selectedProducts = null;
+    //             this.messageService.add({
+    //                 severity: 'success',
+    //                 summary: 'Successful',
+    //                 detail: 'Products Deleted',
+    //                 life: 3000
+    //             });
+    //         }
+    //     });
+    // }
 
     hideDialog() {
         this.articleDialog = false;
