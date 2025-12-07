@@ -11,13 +11,14 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputNumber } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
-import { RadioButton } from 'primeng/radiobutton';
 import { Rating } from 'primeng/rating';
 import { SelectModule } from 'primeng/select';
 import { Table, TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
+import { DialogModule } from 'primeng/dialog';
+
 interface Column {
     field: string;
     header: string;
@@ -42,7 +43,6 @@ interface ExportColumn {
         CommonModule,
         FileUpload,
         FormsModule,
-        RadioButton,
         Rating,
         InputTextModule,
         FormsModule,
@@ -50,7 +50,8 @@ interface ExportColumn {
         IconFieldModule,
         InputIconModule,
         Button,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        DialogModule
     ],
     providers: [MessageService, ConfirmationService, ProductService],
     templateUrl: './provider.html',
