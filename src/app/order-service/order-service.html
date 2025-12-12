@@ -57,6 +57,7 @@
         </div>
 
     </div>
+    
 </p-dialog>
 
 
@@ -112,23 +113,29 @@
         <!-- BOTTOM PART — TABLE (75% HEIGHT) -->
         <div class="flex-1 bg-white rounded-lg shadow p-4 overflow-auto">
             <h2 class="font-bold text-lg mb-4">List of Articles</h2>
-
+            <p>Add search to table & add btn in actions</p>
             <!-- TABLE GOES HERE -->
             <p-table>
                 <ng-template pTemplate="header">
                     <tr>
                         <th>Name</th>
                         <th>Reference</th>
-                        <th>Selling Price</th>
                         <th>Stock</th>
+                        <th>Actions</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-item>
                     <tr>
                         <td>{{ item.name }}</td>
                         <td>{{ item.reference }}</td>
-                        <td>{{ item.sellingrice }}</td>
                         <td>{{ item.stockQuantity }}</td>
+                        <td>
+                            <p-button
+                                icon="pi pi-plus"
+                                severity="success"
+                                (click)="showDialog(item)"
+                            ></p-button>
+
                     </tr>
                 </ng-template>
             </p-table>
@@ -150,15 +157,15 @@
             <p-table>
                 <ng-template pTemplate="header">
                     <tr>
-                        <th>Name</th>
                         <th>Reference</th>
+                        <th>Quantité</th>
                         <th>Employee</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-item>
                     <tr>
-                        <td>{{ item.name }}</td>
                         <td>{{ item.reference }}</td>
+                        <td>{{ item.quantity }}</td>
                         <td>{{ item.employee }}</td>
                     </tr>
                 </ng-template>

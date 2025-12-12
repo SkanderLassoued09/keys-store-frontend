@@ -12,6 +12,9 @@ import { Select } from "primeng/select";
     styleUrl: './order-service.scss'
 })
 export class OrderService {
+showDialog(_t85: any) {
+throw new Error('Method not implemented.');
+}
 visible: boolean = false;
 qty: number = 1;
  employee: string[] | undefined = [
