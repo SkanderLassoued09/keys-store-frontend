@@ -46,7 +46,6 @@ interface ExportColumn {
         FileUpload,
         FormsModule,
         RadioButton,
-        Rating,
         InputTextModule,
         FormsModule,
         InputNumber,
@@ -143,33 +142,6 @@ export class Article {
         this.articleDialog = true;
     }
 
-    deleteSelectedProducts() {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete the selected products?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
-            },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => !this.selectedProducts?.includes(val));
-                this.selectedProducts = null;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Products Deleted',
-                    life: 3000
-                });
-            }
-        });
-    }
-
     hideDialog() {
         this.articleDialog = false;
         this.submitted = false;
@@ -222,17 +194,6 @@ export class Article {
         }
         return id;
     }
-
-    // getSeverity(status: string) {
-    //     switch (status) {
-    //         case 'INSTOCK':
-    //             return 'success';
-    //         case 'LOWSTOCK':
-    //             return 'warn';
-    //         case 'OUTOFSTOCK':
-    //             return 'danger';
-    //     }
-    // }
 
     saveProduct() {
         this.submitted = true;

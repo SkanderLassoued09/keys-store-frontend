@@ -20,7 +20,7 @@ export class ProviderService {
 
     constructor(private readonly httpClient: HttpClient) {}
 
-    createProvider(provider: Provider): Observable<Provider> {
+    createProvider(provider: any): Observable<Provider> {
         return this.httpClient.post<Provider>(this.baseUrl, provider);
     }
 

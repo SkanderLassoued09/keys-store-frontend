@@ -1,3 +1,4 @@
+import { EmployeeService } from '@/layout/service/employee.service';
 import { Product, ProductService } from '@/pages/service/product.service';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ViewChild } from '@angular/core';
@@ -42,11 +43,10 @@ interface ExportColumn {
         CommonModule,
         FileUpload,
         FormsModule,
-        RadioButton,
-        Rating,
+
         InputTextModule,
         FormsModule,
-        InputNumber,
+
         IconFieldModule,
         InputIconModule,
         Button,
@@ -57,21 +57,13 @@ interface ExportColumn {
     styleUrl: './employee.scss'
 })
 export class Employee {
-    onSubmit() {
-        throw new Error('Method not implemented.');
-    }
+    employeeList: any[] = [];
 
     providers: any[] = [];
-    articleForm = new FormGroup({
-        name: new FormControl('', Validators.required),
-        reference: new FormControl(''),
-        purchasePrice: new FormControl(null, Validators.required),
-        sellingrice: new FormControl(null, Validators.required),
-        stockQuantity: new FormControl(0),
-        shopQuantity: new FormControl(0),
-        fournisseur: new FormControl(null),
-        type: new FormControl('key'),
-        category: new FormControl('simple')
+    employeeForm = new FormGroup({
+        firstName: new FormControl('', Validators.required),
+        lastName: new FormControl(''),
+        phone: new FormControl(null, Validators.required)
     });
     articleDialog: boolean = false;
 
@@ -95,6 +87,7 @@ export class Employee {
         private productService: ProductService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
+        private readonly employeeService: EmployeeService,
         private cd: ChangeDetectorRef
     ) {}
 
@@ -104,6 +97,7 @@ export class Employee {
 
     ngOnInit() {
         this.loadDemoData();
+        this.getAllEmployeeForTheTable();
     }
 
     loadDemoData() {
@@ -163,6 +157,32 @@ export class Employee {
                     detail: 'Products Deleted',
                     life: 3000
                 });
+            }
+        });
+    }
+
+    addNewEmployee() {
+        console.log('articleForm', this.employeeForm.value);
+        this.employeeService.createEmployee(this.employeeForm.value).subscribe({
+            next: (response) => {
+                console.log('Article created successfully:', response);
+                // You can reset your form or show success message
+                this.employeeForm.reset();
+            },
+            error: (err) => {
+                console.error('Error creating article:', err);
+            }
+        });
+    }
+
+    getAllEmployeeForTheTable() {
+        this.employeeService.getAllEmployees().subscribe({
+            next: (data) => {
+                this.employeeList = data;
+                console.log('employee:', data);
+            },
+            error: (err) => {
+                console.error('Error loading employee:', err);
             }
         });
     }

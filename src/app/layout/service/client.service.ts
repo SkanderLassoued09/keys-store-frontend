@@ -15,24 +15,24 @@ export interface Client {
     providedIn: 'root'
 })
 export class ClientService {
-    private readonly baseUrl = `${API_CONFIG.baseUrl}/clients`;
+    private readonly baseUrl = `${API_CONFIG.baseUrl}/client`;
 
     constructor(private readonly httpClient: HttpClient) {}
 
-    createClient(client: Client): Observable<Client> {
-        return this.httpClient.post<Client>(this.baseUrl, client);
+    createClient(client: any): Observable<any> {
+        return this.httpClient.post<any>(this.baseUrl, client);
     }
 
-    getAllClients(): Observable<Client[]> {
-        return this.httpClient.get<Client[]>(this.baseUrl);
+    getAllClients(): Observable<any[]> {
+        return this.httpClient.get<any[]>(this.baseUrl);
     }
 
-    getClientById(id: number): Observable<Client> {
-        return this.httpClient.get<Client>(`${this.baseUrl}/${id}`);
+    getClientById(id: number): Observable<any> {
+        return this.httpClient.get<any>(`${this.baseUrl}/${id}`);
     }
 
-    updateClient(id: number, client: Partial<Client>): Observable<Client> {
-        return this.httpClient.put<Client>(`${this.baseUrl}/${id}`, client);
+    updateClient(id: number, client: Partial<any>): Observable<any> {
+        return this.httpClient.put<any>(`${this.baseUrl}/${id}`, client);
     }
 
     deleteClient(id: number): Observable<void> {

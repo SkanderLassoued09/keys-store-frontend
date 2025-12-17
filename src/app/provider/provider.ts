@@ -1,3 +1,4 @@
+import { ProviderService } from '@/layout/service/provider.service';
 import { Product, ProductService } from '@/pages/service/product.service';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ViewChild } from '@angular/core';
@@ -32,7 +33,6 @@ interface ExportColumn {
     selector: 'app-provider',
     imports: [
         TableModule,
-        Dialog,
         SelectModule,
         ToastModule,
         ToolbarModule,
@@ -42,38 +42,32 @@ interface ExportColumn {
         CommonModule,
         FileUpload,
         FormsModule,
-        RadioButton,
-        Rating,
         InputTextModule,
         FormsModule,
-        InputNumber,
         IconFieldModule,
         InputIconModule,
         Button,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        Dialog
     ],
     providers: [MessageService, ConfirmationService, ProductService],
     templateUrl: './provider.html',
     styleUrl: './provider.scss'
 })
 export class Provider {
+    providersList: any[] = [];
     onSubmit() {
         throw new Error('Method not implemented.');
     }
-
     providers: any[] = [];
-    articleForm = new FormGroup({
+    providerFrom = new FormGroup({
         name: new FormControl('', Validators.required),
-        reference: new FormControl(''),
-        purchasePrice: new FormControl(null, Validators.required),
-        sellingrice: new FormControl(null, Validators.required),
-        stockQuantity: new FormControl(0),
-        shopQuantity: new FormControl(0),
-        fournisseur: new FormControl(null),
-        type: new FormControl('key'),
-        category: new FormControl('simple')
+        email: new FormControl(''),
+        company: new FormControl(''),
+        address: new FormControl(''),
+        phone: new FormControl('')
     });
-    articleDialog: boolean = false;
+    providerDialog: boolean = false;
 
     products!: Product[];
 
@@ -94,170 +88,54 @@ export class Provider {
     constructor(
         private productService: ProductService,
         private messageService: MessageService,
+        private readonly providerService: ProviderService,
         private confirmationService: ConfirmationService,
         private cd: ChangeDetectorRef
     ) {}
+
+    ngOnInit() {
+        this.getAllProvidersForTheTable();
+    }
+
+    getAllProvidersForTheTable() {
+        this.providerService.getAllProviders().subscribe({
+            next: (data) => {
+                this.providersList = data;
+                console.log('Articles:', data);
+            },
+            error: (err) => {
+                console.error('Error loading articles:', err);
+            }
+        });
+    }
 
     exportCSV() {
         this.dt.exportCSV();
     }
 
-    ngOnInit() {
-        this.loadDemoData();
-    }
-
-    loadDemoData() {
-        this.productService.getProducts().then((data) => {
-            this.products = data;
-            this.cd.markForCheck();
-        });
-
-        this.statuses = [
-            { label: 'INSTOCK', value: 'instock' },
-            { label: 'LOWSTOCK', value: 'lowstock' },
-            { label: 'OUTOFSTOCK', value: 'outofstock' }
-        ];
-
-        this.cols = [
-            { field: 'code', header: 'Code', customExportHeader: 'Product Code' },
-            { field: 'name', header: 'Name' },
-            { field: 'image', header: 'Image' },
-            { field: 'price', header: 'Price' },
-            { field: 'category', header: 'Category' }
-        ];
-
-        this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
-    }
-
     openNew() {
         this.product = {};
         this.submitted = false;
-        this.articleDialog = true;
-    }
-
-    editProduct(product: Product) {
-        this.product = { ...product };
-        this.articleDialog = true;
-    }
-
-    deleteSelectedProducts() {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete the selected products?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
-            },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => !this.selectedProducts?.includes(val));
-                this.selectedProducts = null;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Products Deleted',
-                    life: 3000
-                });
-            }
-        });
+        this.providerDialog = true;
     }
 
     hideDialog() {
-        this.articleDialog = false;
+        this.providerDialog = false;
         this.submitted = false;
     }
 
-    deleteProduct(product: Product) {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete ' + product.name + '?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
+    saveNewProvider() {
+        console.log('articleForm', this.providerFrom.value);
+        this.providerService.createProvider(this.providerFrom.value).subscribe({
+            next: (response) => {
+                console.log('Article created successfully:', response);
+                // You can reset your form or show success message
+                this.providerFrom.reset();
+                this.providerDialog = false;
             },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => val.id !== product.id);
-                this.product = {};
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Deleted',
-                    life: 3000
-                });
+            error: (err) => {
+                console.error('Error creating article:', err);
             }
         });
-    }
-
-    findIndexById(id: string): number {
-        let index = -1;
-        for (let i = 0; i < this.products.length; i++) {
-            if (this.products[i].id === id) {
-                index = i;
-                break;
-            }
-        }
-
-        return index;
-    }
-
-    createId(): string {
-        let id = '';
-        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (var i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return id;
-    }
-
-    // getSeverity(status: string) {
-    //     switch (status) {
-    //         case 'INSTOCK':
-    //             return 'success';
-    //         case 'LOWSTOCK':
-    //             return 'warn';
-    //         case 'OUTOFSTOCK':
-    //             return 'danger';
-    //     }
-    // }
-
-    saveProduct() {
-        this.submitted = true;
-
-        if (this.product.name?.trim()) {
-            if (this.product.id) {
-                this.products[this.findIndexById(this.product.id)] = this.product;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Updated',
-                    life: 3000
-                });
-            } else {
-                this.product.id = this.createId();
-                this.product.image = 'product-placeholder.svg';
-                this.products.push(this.product);
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Created',
-                    life: 3000
-                });
-            }
-
-            this.products = [...this.products];
-            this.articleDialog = false;
-            this.product = {};
-        }
     }
 }

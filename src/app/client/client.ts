@@ -1,3 +1,4 @@
+import { ClientService } from '@/layout/service/client.service';
 import { Product, ProductService } from '@/pages/service/product.service';
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ViewChild } from '@angular/core';
@@ -43,11 +44,8 @@ interface ExportColumn {
         CommonModule,
         FileUpload,
         FormsModule,
-        RadioButton,
-        Rating,
         InputTextModule,
         FormsModule,
-        InputNumber,
         IconFieldModule,
         InputIconModule,
         Button,
@@ -58,21 +56,17 @@ interface ExportColumn {
     styleUrl: './client.scss'
 })
 export class Client {
+    clientList: any[] = [];
     onSubmit() {
         throw new Error('Method not implemented.');
     }
 
     providers: any[] = [];
-    articleForm = new FormGroup({
-        name: new FormControl('', Validators.required),
-        reference: new FormControl(''),
-        purchasePrice: new FormControl(null, Validators.required),
-        sellingrice: new FormControl(null, Validators.required),
-        stockQuantity: new FormControl(0),
-        shopQuantity: new FormControl(0),
-        fournisseur: new FormControl(null),
-        type: new FormControl('key'),
-        category: new FormControl('simple')
+    clientForm = new FormGroup({
+        firstName: new FormControl('', Validators.required),
+        lastName: new FormControl('', Validators.required),
+        phone: new FormControl('', Validators.required),
+        address: new FormControl('', Validators.required)
     });
     articleDialog: boolean = false;
 
@@ -96,6 +90,7 @@ export class Client {
         private productService: ProductService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
+        private readonly clientService: ClientService,
         private cd: ChangeDetectorRef
     ) {}
 
@@ -105,6 +100,35 @@ export class Client {
 
     ngOnInit() {
         this.loadDemoData();
+        this.getAllClientsForTheTable();
+    }
+
+    addNewClient() {
+        console.log('articleForm', this.clientForm.value);
+        this.clientService.createClient(this.clientForm.value).subscribe({
+            next: (response) => {
+                console.log('Client created successfully:', response);
+                // You can reset your form or show success message
+                this.clientForm.reset();
+            },
+            error: (err) => {
+                console.error('Error creating client:', err);
+            }
+        });
+        this.clientForm.reset();
+        this.articleDialog = false;
+    }
+
+    getAllClientsForTheTable() {
+        this.clientService.getAllClients().subscribe({
+            next: (data) => {
+                this.clientList = data;
+                console.log('client:', data);
+            },
+            error: (err) => {
+                console.error('Error loading client:', err);
+            }
+        });
     }
 
     loadDemoData() {
