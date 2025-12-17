@@ -1,0 +1,72 @@
+<p-toolbar class="mb-6">
+    <ng-template #start>
+        <p-button label="New" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
+        <!-- <p-button severity="danger" label="Delete" icon="pi pi-trash" outlined (onClick)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length" /> -->
+    </ng-template>
+
+    <ng-template #end>
+        <p-fileUpload mode="basic" accept="image/*" [maxFileSize]="1000000" label="Import" chooseLabel="Import" auto customUpload class="mr-2 inline-block" [chooseButtonProps]="{ severity: 'secondary' }" />
+        <p-button label="Export" icon="pi pi-upload" severity="secondary" (onClick)="exportCSV()" />
+    </ng-template>
+</p-toolbar>
+
+<p-table [value]="machineList" [rows]="10" [paginator]="true" [rowHover]="true" dataKey="id" [tableStyle]="{ 'min-width': '75rem' }" currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [showCurrentPageReport]="true">
+    <!-- TABLE HEADER -->
+    <ng-template pTemplate="header">
+        <tr>
+            <th style="width: 3rem"><p-tableHeaderCheckbox /></th>
+
+            <th>Name</th>
+            <th>Type</th>
+            <th>Serial number</th>
+
+            <th style="min-width: 10rem">Actions</th>
+        </tr>
+    </ng-template>
+
+    <!-- TABLE BODY -->
+    <ng-template pTemplate="body" let-item>
+        <tr>
+            <td><p-tableCheckbox [value]="item" /></td>
+
+            <td>{{ item.name }}</td>
+            <td>{{ item.type }}</td>
+            <td>{{ item.serialNumber }}</td>
+
+            <td>
+                <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" />
+                <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" />
+            </td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<p-dialog [(visible)]="machineDialog" [style]="{ width: '500px' }" header="Creation Employé" [modal]="true" [closable]="true">
+    <form [formGroup]="machineForm" class="flex flex-col gap-5">
+        <!-- 🔹 Name -->
+        <div>
+            <label for="name" class="block font-bold mb-2">Name</label>
+            <input id="name" type="text" pInputText formControlName="name" />
+            <!-- <small class="text-red-500" *ngIf="submitted && employeeForm.get('name')?.invalid"> Name is required. </small> -->
+        </div>
+        <!-- 🔹 Name -->
+        <div>
+            <label for="name" class="block font-bold mb-2">type</label>
+            <input id="name" type="lastName" pInputText formControlName="type" />
+            <!-- <small class="text-red-500" *ngIf="submitted && employeeForm.get('lastName')?.invalid"> lastName is required. </small> -->
+        </div>
+        <!-- 🔹 Name -->
+        <div>
+            <label for="name" class="block font-bold mb-2">serial number</label>
+            <input id="name" type="text" pInputText formControlName="serialNumber" />
+            <!-- <small class="text-red-500" *ngIf="submitted && employeeForm.get('phone')?.invalid"> phone is required. </small> -->
+        </div>
+    </form>
+
+    <ng-template #footer>
+        <p-button label="Cancel" icon="pi pi-times" text (click)="hideDialog()" />
+        <p-button label="Save" icon="pi pi-check" (click)="addNewMachine()" />
+    </ng-template>
+</p-dialog>
+
+<p-confirmDialog [style]="{ width: '450px' }" />
