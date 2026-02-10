@@ -1,7 +1,6 @@
-import { Product, ProductService } from '@/pages/service/product.service';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, ViewChild } from '@angular/core';
-import { FormGroup, FormControl, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
@@ -9,27 +8,22 @@ import { Dialog } from 'primeng/dialog';
 import { FileUpload } from 'primeng/fileupload';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { InputNumber } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
-import { RadioButton } from 'primeng/radiobutton';
-import { Rating } from 'primeng/rating';
 import { SelectModule } from 'primeng/select';
-import { Table, TableModule } from 'primeng/table';
+import { TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
-interface Column {
-    field: string;
-    header: string;
-    customExportHeader?: string;
-}
+import { Observable } from 'rxjs';
+import { Store } from '@ngrx/store';
+import * as EmployeeActions from '../store/employee-store/emloyee.actions';
+import * as EmployeeSelectors from '../store/employee-store/employee.selectors';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { DatePickerModule } from 'primeng/datepicker';
 
-interface ExportColumn {
-    title: string;
-    dataKey: string;
-}
 @Component({
     selector: 'app-employee',
+    standalone: true,
     imports: [
         TableModule,
         Dialog,
@@ -42,216 +36,133 @@ interface ExportColumn {
         CommonModule,
         FileUpload,
         FormsModule,
-        RadioButton,
-        Rating,
         InputTextModule,
         FormsModule,
-        InputNumber,
         IconFieldModule,
         InputIconModule,
         Button,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        DatePickerModule,
+        InputNumberModule
     ],
-    providers: [MessageService, ConfirmationService, ProductService],
+    providers: [MessageService, ConfirmationService, MessageService],
     templateUrl: './employee.html',
     styleUrl: './employee.scss'
 })
 export class Employee {
-    onSubmit() {
-        throw new Error('Method not implemented.');
-    }
-
-    providers: any[] = [];
-    employeeForm = new FormGroup({
-        name: new FormControl('', Validators.required),
-        lastName: new FormControl(''),
-        phone: new FormControl(null, Validators.required),
-    });
-    articleDialog: boolean = false;
-
-    products!: Product[];
-
-    product!: Product;
-
-    selectedProducts!: Product[] | null;
-
+    // Dialog state
+    employeeDialog: boolean = false;
     submitted: boolean = false;
+    isEditMode: boolean = false;
+    currentEmployeeId: string | null = null;
 
-    statuses!: any[];
+    // Form
+    employeeForm = new FormGroup({
+        firstName: new FormControl('', Validators.required),
+        lastName: new FormControl('', Validators.required),
+        phone: new FormControl(''),
+        hireDate: new FormControl<Date | null>(null),
+        salary: new FormControl<number | null>(null),
+        isActive: new FormControl(true)
+    });
 
-    @ViewChild('dt') dt!: Table;
+    // NGRX Observables
+    employee$: Observable<any[]>;
+    loading$: Observable<boolean>;
+    error$: Observable<string | null>;
 
-    cols!: Column[];
-
-    exportColumns!: ExportColumn[];
-
-    constructor(
-        private productService: ProductService,
-        private messageService: MessageService,
-        private confirmationService: ConfirmationService,
-        private cd: ChangeDetectorRef
-    ) {}
-
-    exportCSV() {
-        this.dt.exportCSV();
+    constructor(private store: Store) {
+        this.employee$ = this.store.select(EmployeeSelectors.selectAllEmployees);
+        this.loading$ = this.store.select(EmployeeSelectors.selectEmployeeLoading);
+        this.error$ = this.store.select(EmployeeSelectors.selectEmployeeError);
     }
 
     ngOnInit() {
-        this.loadDemoData();
+        this.store.dispatch(EmployeeActions.loadEmployee());
     }
 
-    loadDemoData() {
-        this.productService.getProducts().then((data) => {
-            this.products = data;
-            this.cd.markForCheck();
-        });
-
-        this.statuses = [
-            { label: 'INSTOCK', value: 'instock' },
-            { label: 'LOWSTOCK', value: 'lowstock' },
-            { label: 'OUTOFSTOCK', value: 'outofstock' }
-        ];
-
-        this.cols = [
-            { field: 'code', header: 'Code', customExportHeader: 'Product Code' },
-            { field: 'name', header: 'Name' },
-            { field: 'image', header: 'Image' },
-            { field: 'price', header: 'Price' },
-            { field: 'category', header: 'Category' }
-        ];
-
-        this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
-    }
-
+    // Open dialog for creating new employee
     openNew() {
-        this.product = {};
+        this.isEditMode = false;
+        this.currentEmployeeId = null;
+        this.employeeForm.reset({ isActive: true });
         this.submitted = false;
-        this.articleDialog = true;
+        this.employeeDialog = true;
     }
 
-    editProduct(product: Product) {
-        this.product = { ...product };
-        this.articleDialog = true;
-    }
+    // Open dialog for editing existing employee
+    editEmployee(employee: any) {
+        this.isEditMode = true;
+        this.currentEmployeeId = employee._id;
 
-    deleteSelectedProducts() {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete the selected products?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
-            },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => !this.selectedProducts?.includes(val));
-                this.selectedProducts = null;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Products Deleted',
-                    life: 3000
-                });
-            }
+        this.employeeForm.patchValue({
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            phone: employee.phone,
+            hireDate: employee.hireDate ? new Date(employee.hireDate) : null,
+            salary: employee.salary,
+            isActive: employee.isActive ?? true
         });
-    }
 
-    hideDialog() {
-        this.articleDialog = false;
         this.submitted = false;
+        this.employeeDialog = true;
     }
 
-    deleteProduct(product: Product) {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete ' + product.name + '?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
-            },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => val.id !== product.id);
-                this.product = {};
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Deleted',
-                    life: 3000
-                });
-            }
-        });
-    }
-
-    findIndexById(id: string): number {
-        let index = -1;
-        for (let i = 0; i < this.products.length; i++) {
-            if (this.products[i].id === id) {
-                index = i;
-                break;
-            }
-        }
-
-        return index;
-    }
-
-    createId(): string {
-        let id = '';
-        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (var i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return id;
-    }
-
-    // getSeverity(status: string) {
-    //     switch (status) {
-    //         case 'INSTOCK':
-    //             return 'success';
-    //         case 'LOWSTOCK':
-    //             return 'warn';
-    //         case 'OUTOFSTOCK':
-    //             return 'danger';
-    //     }
-    // }
-
-    saveProduct() {
+    // Save employee (handles both create and update)
+    saveEmployee() {
         this.submitted = true;
 
-        if (this.product.name?.trim()) {
-            if (this.product.id) {
-                this.products[this.findIndexById(this.product.id)] = this.product;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Updated',
-                    life: 3000
-                });
-            } else {
-                this.product.id = this.createId();
-                this.product.image = 'product-placeholder.svg';
-                this.products.push(this.product);
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Created',
-                    life: 3000
-                });
-            }
-
-            this.products = [...this.products];
-            this.articleDialog = false;
-            this.product = {};
+        if (this.employeeForm.invalid) {
+            return;
         }
+
+        if (this.isEditMode && this.currentEmployeeId) {
+            // Update existing employee
+            this.store.dispatch(
+                EmployeeActions.updateEmployee({
+                    employee: {
+                        id: this.currentEmployeeId,
+                        ...this.employeeForm.value
+                    }
+                })
+            );
+        } else {
+            // Create new employee
+            this.store.dispatch(
+                EmployeeActions.createEmployee({
+                    employee: this.employeeForm.value
+                })
+            );
+        }
+
+        this.hideDialog();
+    }
+
+    // Delete employee
+    deleteEmployee(employee: any) {
+        this.store.dispatch(
+            EmployeeActions.deleteEmployee({
+                id: employee._id
+            })
+        );
+    }
+
+    // Hide dialog
+    hideDialog() {
+        this.employeeDialog = false;
+        this.submitted = false;
+        this.isEditMode = false;
+        this.currentEmployeeId = null;
+        this.employeeForm.reset({ isActive: true });
+    }
+
+    // Get dialog title dynamically
+    getDialogTitle(): string {
+        return this.isEditMode ? 'Modifier un employé' : 'Créer un employé';
+    }
+
+    // Get save button label dynamically
+    getSaveButtonLabel(): string {
+        return this.isEditMode ? 'Enregistrer' : "Créer l'employé";
     }
 }

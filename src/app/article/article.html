@@ -6,25 +6,37 @@
 
     <ng-template #end>
         <p-fileUpload mode="basic" accept="image/*" [maxFileSize]="1000000" label="Import" chooseLabel="Import" auto customUpload class="mr-2 inline-block" [chooseButtonProps]="{ severity: 'secondary' }" />
-        <p-button label="Export" icon="pi pi-upload" severity="secondary" (onClick)="exportCSV()" />
     </ng-template>
 </p-toolbar>
-
-<p-table [value]="articlesList" [rows]="10" [paginator]="true" [rowHover]="true" dataKey="id" [tableStyle]="{ 'min-width': '75rem' }" currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [showCurrentPageReport]="true">
+<!-- <div *ngIf="loading$ | async">Loading...</div> -->
+<!-- <div *ngIf="error$ | async as error">Error: {{ error }}</div> -->
+<p-table
+    [value]="(article$ | async) || []"
+    [loading]="(loading$ | async) || false"
+    [rows]="10"
+    [paginator]="true"
+    [rowHover]="true"
+    dataKey="id"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+    [showCurrentPageReport]="true"
+>
     <!-- TABLE HEADER -->
     <ng-template pTemplate="header">
         <tr>
-            <th style="width: 3rem"><p-tableHeaderCheckbox /></th>
+            <!-- <th style="width: 3rem"><p-tableHeaderCheckbox /></th> -->
 
-            <th>Name</th>
-            <th>Reference</th>
-            <th>Purchase Price</th>
-            <th>Selling Price</th>
-            <th>Stock Qty</th>
-            <th>Shop Qty</th>
-            <th>Provider</th>
+            <th>Nom</th>
+            <th>Référence</th>
+            <th>Prix d’achat</th>
+            <th>Prix de vente</th>
+            <th>Quantité en stock</th>
+            <th>Quantité en magasin</th>
+            <th>Fournisseur</th>
             <th>Type</th>
-            <th>Category</th>
+            <th>Article type</th>
+            <th>Catégorie</th>
+            <!-- <th>Category</th> -->
             <th style="min-width: 10rem">Actions</th>
         </tr>
     </ng-template>
@@ -32,114 +44,175 @@
     <!-- TABLE BODY -->
     <ng-template pTemplate="body" let-item>
         <tr>
-            <td><p-tableCheckbox [value]="item" /></td>
+            <!-- <td><p-tableCheckbox [value]="item" /></td> -->
 
             <td>{{ item.name }}</td>
             <td>{{ item.reference }}</td>
             <td>{{ item.purchasePrice }}</td>
-            <td>{{ item.sellingrice }}</td>
+            <td>{{ item.sellingPrice }}</td>
             <td>{{ item.stockQuantity }}</td>
             <td>{{ item.shopQuantity }}</td>
             <td>{{ item.fournisseur }}</td>
             <td>{{ item.type }}</td>
+            <td>{{ item.articleType }}</td>
             <td>{{ item.category }}</td>
+            <!-- <td>{{ item.category }}</td> -->
 
             <td>
-                <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editProduct(item)" />
-                <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" (click)="deleteProduct(item)" />
+                <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" (click)="editArticle(item)" pTooltip="Modifier" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteArticle(item)" pTooltip="Supprimer" />
             </td>
         </tr>
     </ng-template>
 </p-table>
 
-<p-dialog [(visible)]="articleDialog" [style]="{ width: '500px' }" header="Creation d'article" [modal]="true" [closable]="true">
-    <form [formGroup]="articleForm" class="flex flex-col gap-5" (ngSubmit)="getValuesFromField()">
-        <div class="flex flex-wrap gap-4">
-            <div class="flex items-center">
-                <p-radiobutton name="type" value="Keys" formControlName="type" inputId="type1" />
-                <label for="type1" class="ml-2">Keys</label>
+<!-- EDIT DIALOG -->
+<!--  -->
+
+<p-dialog [(visible)]="articleDialog" [style]="{ width: '650px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" styleClass="article-dialog">
+    <form [formGroup]="articleForm" class="article-form" (ngSubmit)="saveArticle()">
+        <!-- 🔹 Article Type -->
+        <div class="form-section">
+            <label class="section-label">Type d'article <span class="required">*</span></label>
+            <div class="type-grid">
+                <div class="type-option" *ngFor="let type of articleTypes" [class.selected]="articleForm.get('type')?.value === type.value" (click)="articleForm.patchValue({type: type.value}); onTypeChange(type.value)">
+                    <p-radiobutton name="type" [value]="type.value" formControlName="type" [inputId]="type.value"> </p-radiobutton>
+                    <div class="type-content">
+                        <i [class]="type.icon"></i>
+                        <div class="type-label">{{ type.label }}</div>
+                    </div>
+                </div>
+            </div>
+            <small class="error-message" *ngIf="submitted && articleForm.get('type')?.invalid"> Veuillez sélectionner un type </small>
+        </div>
+
+        <!-- 🔹 Basic Information -->
+        <div class="form-section">
+            <label class="section-label">Informations générales</label>
+
+            <div class="form-row">
+                <!-- Name -->
+                <div class="form-field flex-2">
+                    <label for="name">Nom <span class="required">*</span></label>
+                    <input id="name" type="text" pInputText formControlName="name" placeholder="Ex: Clé Yale" />
+                    <small class="error-message" *ngIf="submitted && articleForm.get('name')?.invalid"> Le nom est obligatoire </small>
+                </div>
+
+                <!-- Reference -->
+                <div class="form-field flex-1">
+                    <label for="reference">Référence</label>
+                    <input id="reference" type="text" pInputText formControlName="reference" placeholder="Ex: REF-001" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <label class="section-label">Catégorie</label>
+
+            <div class="form-row">
+                <!-- Category (dynamic) -->
+                <div class="form-field flex-2">
+                    <label for="category">Type <span class="required">*</span></label>
+                    <p-select
+                        [options]="selectedArticleType"
+                        [appendTo]="'body'"
+                        formControlName="articleType"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Sélectionner un article type"
+                        [filter]="true"
+                        filterPlaceholder="Rechercher..."
+                        [disabled]="!selectedArticleType.length"
+                    >
+                    </p-select>
+                    <small class="error-message" *ngIf="submitted && articleForm.get('category')?.invalid"> La catégorie est obligatoire </small>
+                </div>
+                <!-- Category (dynamic) -->
+                <div class="form-field flex-2">
+                    <label for="category">Catégorie <span class="required">*</span></label>
+                    <p-select
+                        [options]="selectedCategories"
+                        [appendTo]="'body'"
+                        formControlName="category"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Sélectionner une catégorie"
+                        [filter]="true"
+                        filterPlaceholder="Rechercher..."
+                        [disabled]="!selectedCategories.length"
+                    >
+                    </p-select>
+                    <small class="error-message" *ngIf="submitted && articleForm.get('category')?.invalid"> La catégorie est obligatoire </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔹 Pricing -->
+        <div class="form-section">
+            <label class="section-label">Prix</label>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="purchasePrice">Prix d'achat <span class="required">*</span></label>
+                    <p-inputNumber id="purchasePrice" formControlName="purchasePrice" mode="currency" currency="TND" locale="fr-TN" [minFractionDigits]="2" placeholder="0.00"> </p-inputNumber>
+                    <small class="error-message" *ngIf="submitted && articleForm.get('purchasePrice')?.invalid"> Le prix d'achat est obligatoire </small>
+                </div>
+
+                <div class="form-field">
+                    <label for="sellingPrice">Prix de vente <span class="required">*</span></label>
+                    <p-inputNumber id="sellingPrice" formControlName="sellingPrice" mode="currency" currency="TND" locale="fr-TN" [minFractionDigits]="2" placeholder="0.00"> </p-inputNumber>
+                    <small class="error-message" *ngIf="submitted && articleForm.get('sellingPrice')?.invalid"> Le prix de vente est obligatoire </small>
+                </div>
             </div>
 
-            <div class="flex items-center">
-                <p-radiobutton name="type" value="CarKeys" formControlName="type" inputId="type2" />
-                <label for="type2" class="ml-2">Car Keys</label>
-            </div>
-
-            <div class="flex items-center">
-                <p-radiobutton name="type" value="Remote" formControlName="type" inputId="type3" />
-                <label for="type3" class="ml-2">Remote</label>
-            </div>
-
-            <div class="flex items-center">
-                <p-radiobutton name="type" value="stamp" formControlName="type" inputId="type4" />
-                <label for="type4" class="ml-2">Stamp</label>
-            </div>
-
-            <div class="flex items-center">
-                <p-radiobutton name="type" value="KeyChain" formControlName="type" inputId="type5" />
-                <label for="type5" class="ml-2">Key Chain</label>
-            </div>
-
-            <div class="flex items-center">
-                <p-radiobutton name="type" value="Other" formControlName="type" inputId="type6" />
-                <label for="type6" class="ml-2">Other</label>
+            <!-- Profit Margin -->
+            <div class="profit-indicator" *ngIf="calculateMargin() !== null">
+                <span class="profit-label">Marge bénéficiaire:</span>
+                <span class="profit-value" [ngClass]="getMarginClass()"> +{{ calculateMargin() }}% </span>
             </div>
         </div>
-        <!-- 🔹 Name -->
-        <div>
-            <label for="name" class="block font-bold mb-2">Name</label>
-            <input id="name" type="text" pInputText formControlName="name" placeholder="Enter article name" />
-            <small class="text-red-500" *ngIf="submitted && articleForm.get('name')?.invalid"> Name is required. </small>
+
+        <!-- 🔹 Stock -->
+        <div class="form-section">
+            <label class="section-label">Quantités</label>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="stockQuantity">Stock</label>
+                    <p-inputNumber id="stockQuantity" formControlName="stockQuantity" [showButtons]="true" [min]="0" placeholder="0"> </p-inputNumber>
+                </div>
+
+                <div class="form-field">
+                    <label for="shopQuantity">Magasin</label>
+                    <p-inputNumber id="shopQuantity" formControlName="shopQuantity" [showButtons]="true" [min]="0" placeholder="0"> </p-inputNumber>
+                </div>
+            </div>
         </div>
 
-        <!-- 🔹 Reference -->
-        <div>
-            <label for="reference" class="block font-bold mb-2">Reference</label>
-            <input id="reference" type="text" pInputText formControlName="reference" placeholder="Enter reference" />
-        </div>
+        <!-- 🔹 Additional Info -->
+        <div class="form-section">
+            <label class="section-label">Informations complémentaires</label>
 
-        <!-- 🔹 Purchase Price -->
-        <div>
-            <label for="purchasePrice" class="block font-bold mb-2">Purchase Price</label>
-            <p-inputNumber id="purchasePrice" formControlName="purchasePrice" mode="decimal" [minFractionDigits]="2"></p-inputNumber>
-            <small class="text-red-500" *ngIf="submitted && articleForm.get('purchasePrice')?.invalid"> Purchase price is required. </small>
-        </div>
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="fournisseur">Fournisseur</label>
+                    <p-select [options]="(providers$ | async) ?? []" [appendTo]="'body'" formControlName="fournisseur" optionLabel="name" optionValue="id" placeholder="Sélectionner un fournisseur" [filter]="true" filterPlaceholder="Rechercher...">
+                    </p-select>
+                </div>
 
-        <!-- 🔹 Selling Price -->
-        <div>
-            <label for="sellingrice" class="block font-bold mb-2">Selling Price</label>
-            <p-inputNumber id="sellingrice" formControlName="sellingrice" mode="decimal" [minFractionDigits]="2"></p-inputNumber>
-            <small class="text-red-500" *ngIf="submitted && articleForm.get('sellingrice')?.invalid"> Selling price is required. </small>
-        </div>
-
-        <!-- 🔹 Stock Quantity -->
-        <div>
-            <label for="stockQuantity" class="block font-bold mb-2">Stock Quantity</label>
-            <p-inputNumber id="stockQuantity" formControlName="stockQuantity"></p-inputNumber>
-        </div>
-
-        <!-- 🔹 Shop Quantity -->
-        <div>
-            <label for="shopQuantity" class="block font-bold mb-2">Shop Quantity</label>
-            <p-inputNumber id="shopQuantity" formControlName="shopQuantity"></p-inputNumber>
-        </div>
-
-        <!-- 🔹 Provider (Fournisseur) -->
-        <div>
-            <label for="provider" class="block font-bold mb-2">Provider</label>
-
-            <p-select [options]="providers" formControlName="provider" optionLabel="name" optionValue="id" placeholder="Choisir Fournisseur" class="w-full md:w-56"> </p-select>
-        </div>
-
-        <div>
-            <label for="emplacement" class="block font-bold mb-2">Emplacement</label>
-            <input id="emplacement" type="text" pInputText formControlName="emplacement" placeholder="Enter emplacement" />
+                <div class="form-field">
+                    <label for="emplacement">Emplacement</label>
+                    <input id="emplacement" type="text" pInputText formControlName="emplacement" placeholder="Ex: Rayon A, Étagère 3" />
+                </div>
+            </div>
         </div>
     </form>
 
     <ng-template #footer>
-        <p-button label="Cancel" icon="pi pi-times" text (click)="hideDialog()" />
-        <p-button label="Save" icon="pi pi-check" (click)="getValuesFromField()" />
+        <div class="dialog-footer">
+            <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (click)="hideDialog()" />
+            <p-button [label]="getSaveButtonLabel()" [icon]="isEditMode ? 'pi pi-save' : 'pi pi-check'" severity="primary" (click)="saveArticle()" [disabled]="articleForm.invalid" />
+        </div>
     </ng-template>
 </p-dialog>
 

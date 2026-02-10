@@ -18,23 +18,18 @@ import { FormControl, FormControlName, FormGroup, FormsModule, ReactiveFormsModu
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
-import { ArticleService } from '@/layout/service/article.service';
-import { ProviderService } from '@/layout/service/provider.service';
-interface Column {
-    field: string;
-    header: string;
-    customExportHeader?: string;
-}
+import { Observable, tap } from 'rxjs';
+import * as ArticleAction from '../store/article-store/article.actions';
+import * as ProviderAction from '../store/provider-store/provider.actions';
+import * as ArticleSelectors from '../store/article-store/article.selectors';
+import { Store } from '@ngrx/store';
+import { selectProvidersForDropdown } from '@/store/provider-store/provider.selectors';
 
-interface ExportColumn {
-    title: string;
-    dataKey: string;
-}
 export interface Article {
     name?: string;
     reference?: string;
     purchasePrice?: string;
-    sellingrice?: string;
+    sellinPrice?: string;
     stockQuantity?: number;
     shopQuantity?: number;
     fournisseur?: string;
@@ -57,7 +52,6 @@ export interface Article {
         FileUpload,
         FormsModule,
         RadioButton,
-        Rating,
         InputTextModule,
         FormsModule,
         InputNumber,
@@ -71,253 +65,225 @@ export interface Article {
     styleUrl: './article.scss'
 })
 export class Article {
-    cities: any[] | undefined;
-    selectedCity: any;
-    articleType: any;
+    // Dialog state
+    articleDialog: boolean = false;
+    submitted: boolean = false;
+    isEditMode: boolean = false;
+    currentArticleId: string | null = null;
+
+    // Article Types
+    articleTypes = [
+        { value: 'Keys', label: 'Clés', icon: 'pi pi-key' },
+        { value: 'CarKeys', label: 'Clés Auto', icon: 'pi pi-car' },
+        { value: 'Remote', label: 'Télécommande', icon: 'pi pi-wifi' },
+        { value: 'stamp', label: 'Tampon', icon: 'pi pi-bookmark' },
+        { value: 'KeyChain', label: 'Porte-clés', icon: 'pi pi-link' },
+        { value: 'Other', label: 'Autre', icon: 'pi pi-ellipsis-h' }
+    ];
+
+    // Categories depending on type
+    aricleByType = {
+        Keys: [
+            { value: 'simple', label: 'Simple' },
+            { value: 'a pointe', label: 'À pointe' },
+            { value: 'double panneton', label: 'Double panneton' },
+            { value: 'tubulaire', label: 'Tubulaire' }
+        ],
+        CarKeys: [
+            { value: 'VVDI', label: 'VVDI' },
+            { value: 'Smart VVDI', label: 'Smart VVDI' },
+            { value: '433Mhz-commande', label: '433Mhz-commande' },
+            { value: '315Mhz-commande', label: '315Mhz-commande' },
+            { value: 'other', label: 'Autre' }
+        ],
+        Remote: [
+            { value: 'universelle-bleu', label: 'Universelle Bleu' },
+            { value: 'selca-L', label: 'Selca-L' },
+            { value: 'selca-V', label: 'Selca-V' },
+            { value: 'somfy', label: 'Somfy' },
+            { value: 'sommer', label: 'Sommer' },
+            { value: 'nice', label: 'Nice' },
+            { value: 'bennica', label: 'Bennica' },
+            { value: 'other', label: 'Autre' }
+        ],
+        stamp: [
+            { value: '4911', label: '4911' },
+            { value: '4912', label: '4912' },
+            { value: '4913', label: '4913' },
+            { value: 'R-30', label: 'R-30' },
+            { value: 'R40', label: 'R40' },
+            { value: 'dateur', label: 'Dateur' },
+            { value: 'RIB', label: 'RIB' },
+            { value: 'rubber', label: 'Rubber' },
+            { value: 'other', label: 'Autre' }
+        ],
+        KeyChain: [
+            { value: 'metal', label: 'Métal' },
+            { value: 'plastic', label: 'Plastique' },
+            { value: 'leather', label: 'Cuir' },
+            { value: 'other', label: 'Autre' }
+        ],
+        Other: [{ value: 'other', label: 'Autre' }]
+    } as any;
+
+    // Selected categories array
+    selectedArticleType = [];
+    selectedCategories = [
+        { value: 'KeyHome', label: 'Clé maison' },
+        { value: 'KeyCar', label: 'Clé voiture' }
+    ];
 
     providers: any[] = [];
 
     articleForm = new FormGroup({
         type: new FormControl('', Validators.required),
+        articleType: new FormControl('', Validators.required),
         name: new FormControl('', Validators.required),
         reference: new FormControl(''),
         purchasePrice: new FormControl(null, Validators.required),
-        sellingrice: new FormControl(null, Validators.required),
+        sellingPrice: new FormControl(null, Validators.required),
         stockQuantity: new FormControl(null),
         shopQuantity: new FormControl(null),
         emplacement: new FormControl(''),
-        provider: new FormControl('')
+        fournisseur: new FormControl(''),
+        category: new FormControl('')
     });
 
-    articleDialog: boolean = false;
+    // NGRX
+    article$: Observable<any[]> | undefined;
+    providers$: Observable<any[]> | undefined;
+    loading$: Observable<boolean> | undefined;
+    error$: Observable<string | null> | undefined;
 
-    products!: Product[];
-
-    product!: Product;
-
-    selectedProducts!: Article[] | null;
-
-    submitted: boolean = false;
-
-    statuses!: any[];
-
-    @ViewChild('dt') dt!: Table;
-
-    cols!: Column[];
-
-    exportColumns!: ExportColumn[];
-    articlesList: any[] = [];
-
-    constructor(
-        private productService: ProductService,
-        private messageService: MessageService,
-        private confirmationService: ConfirmationService,
-        private cd: ChangeDetectorRef,
-        private readonly articleService: ArticleService,
-        private readonly providerService: ProviderService
-    ) {}
-
-    exportCSV() {
-        this.dt.exportCSV();
+    constructor(private store: Store) {
+        this.article$ = this.store.select(ArticleSelectors.selectAllArticles);
+        this.loading$ = this.store.select(ArticleSelectors.selectArticleLoading);
+        this.error$ = this.store.select(ArticleSelectors.selectArticleError);
+        this.providers$ = this.store.select(selectProvidersForDropdown);
     }
 
     ngOnInit() {
-        this.loadDemoData();
-        this.getAllProvidersToListThemInDropDownList();
-        this.getAllArticleForTheTable();
-    }
-    getValuesFromField() {
-        console.log('articleForm', this.articleForm.value);
-        this.articleService.createArticle(this.articleForm.value).subscribe({
-            next: (response) => {
-                console.log('Article created successfully:', response);
-                // You can reset your form or show success message
-                this.articleForm.reset();
-            },
-            error: (err) => {
-                console.error('Error creating article:', err);
-            }
-        });
+        this.store.dispatch(ArticleAction.loadArticle());
+        this.store.dispatch(ProviderAction.loadProvider());
     }
 
-    getAllProvidersToListThemInDropDownList() {
-        this.providerService.getAllProviders().subscribe({
-            next: (data) => {
-                console.log('Providers:', data);
-                this.providers = data.map((provider) => {
-                    return { id: provider._id, name: provider.name };
-                });
-            },
-            error: (err) => {
-                console.error('Error loading providers:', err);
-            }
-        });
-    }
-
-    getAllArticleForTheTable() {
-        this.articleService.getAllArticles().subscribe({
-            next: (data) => {
-                this.articlesList = data;
-                console.log('Articles:', data);
-            },
-            error: (err) => {
-                console.error('Error loading articles:', err);
-            }
-        });
-    }
-
-    loadDemoData() {
-        this.productService.getProducts().then((data) => {
-            this.products = data;
-            this.cd.markForCheck();
-        });
-
-        this.statuses = [
-            { label: 'INSTOCK', value: 'instock' },
-            { label: 'LOWSTOCK', value: 'lowstock' },
-            { label: 'OUTOFSTOCK', value: 'outofstock' }
-        ];
-
-        this.cols = [
-            { field: 'code', header: 'Code', customExportHeader: 'Product Code' },
-            { field: 'name', header: 'Name' },
-            { field: 'image', header: 'Image' },
-            { field: 'price', header: 'Price' },
-            { field: 'category', header: 'Category' }
-        ];
-
-        this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
-    }
-
+    // Open dialog for creating new article
     openNew() {
-        this.product = {};
+        this.isEditMode = false;
+        this.currentArticleId = null;
+        this.articleForm.reset();
+        this.submitted = false;
+        this.articleDialog = true;
+    }
+    onTypeChange(typeValue: string) {
+        this.selectedArticleType = this.aricleByType[typeValue] || [];
+        this.articleForm.patchValue({ category: null }); // reset category selection
+    }
+
+    // Open dialog for editing existing article
+    editArticle(article: any) {
+        console.log(article);
+        this.isEditMode = true;
+        this.currentArticleId = article._id;
+
+        // Use patchValue to populate the form
+        this.articleForm.patchValue({
+            type: article.type,
+            name: article.name,
+            reference: article.reference,
+            purchasePrice: article.purchasePrice,
+            sellingPrice: article.sellingPrice,
+            stockQuantity: article.stockQuantity,
+            shopQuantity: article.shopQuantity,
+            emplacement: article.emplacement,
+            fournisseur: article.fournisseur
+        });
+
         this.submitted = false;
         this.articleDialog = true;
     }
 
-    editProduct(product: Product) {
-        this.product = { ...product };
-        this.articleDialog = true;
+    // Save article (handles both create and update)
+    saveArticle() {
+        console.log('value', this.articleForm.value);
+        console.log('this.articleForm.value', this.articleForm.value);
+        this.submitted = true;
+
+        if (this.articleForm.invalid) {
+            return;
+        }
+
+        if (this.isEditMode && this.currentArticleId) {
+            // Update existing article
+            this.store.dispatch(
+                ArticleAction.updateArticle({
+                    article: {
+                        id: this.currentArticleId,
+                        ...this.articleForm.value
+                    }
+                })
+            );
+        } else {
+            // Create new article
+            this.store.dispatch(
+                ArticleAction.createArticle({
+                    article: this.articleForm.value
+                })
+            );
+        }
+
+        this.hideDialog();
     }
 
-    // deleteSelectedProducts() {
-    //     this.confirmationService.confirm({
-    //         message: 'Are you sure you want to delete the selected products?',
-    //         header: 'Confirm',
-    //         icon: 'pi pi-exclamation-triangle',
-    //         rejectButtonProps: {
-    //             label: 'No',
-    //             severity: 'secondary',
-    //             variant: 'text'
-    //         },
-    //         acceptButtonProps: {
-    //             severity: 'danger',
-    //             label: 'Yes'
-    //         },
-    //         accept: () => {
-    //             this.products = this.products.filter((val) => !this.selectedProducts?.includes(val));
-    //             this.selectedProducts = null;
-    //             this.messageService.add({
-    //                 severity: 'success',
-    //                 summary: 'Successful',
-    //                 detail: 'Products Deleted',
-    //                 life: 3000
-    //             });
-    //         }
-    //     });
-    // }
+    // Keep for backward compatibility (can be removed)
+    onCreateArticle() {
+        this.saveArticle();
+    }
 
+    // Delete article
+    deleteArticle(article: any) {
+        this.store.dispatch(
+            ArticleAction.deleteArticle({
+                id: article._id
+            })
+        );
+    }
+
+    // Hide dialog
     hideDialog() {
         this.articleDialog = false;
         this.submitted = false;
+        this.isEditMode = false;
+        this.currentArticleId = null;
+        this.articleForm.reset();
     }
 
-    deleteProduct(product: Product) {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete ' + product.name + '?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
-            },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => val.id !== product.id);
-                this.product = {};
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Deleted',
-                    life: 3000
-                });
-            }
-        });
+    // Get dialog title dynamically
+    getDialogTitle(): string {
+        return this.isEditMode ? 'Modifier un article' : 'Créer un article';
     }
 
-    findIndexById(id: string): number {
-        let index = -1;
-        for (let i = 0; i < this.products.length; i++) {
-            if (this.products[i].id === id) {
-                index = i;
-                break;
-            }
-        }
-
-        return index;
+    // Get save button label dynamically
+    getSaveButtonLabel(): string {
+        return this.isEditMode ? 'Enregistrer' : "Créer l'article";
     }
 
-    createId(): string {
-        let id = '';
-        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (var i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return id;
+    // Calculate profit margin
+    calculateMargin(): number | null {
+        const purchase = this.articleForm.get('purchasePrice')?.value;
+        const selling = this.articleForm.get('sellingPrice')?.value;
+
+        if (!purchase || !selling || purchase === 0) return null;
+
+        return Number((((selling - purchase) / purchase) * 100).toFixed(0));
     }
 
-    // getSeverity(status: string) {
-    //     switch (status) {
-    //         case 'INSTOCK':
-    //             return 'success';
-    //         case 'LOWSTOCK':
-    //             return 'warn';
-    //         case 'OUTOFSTOCK':
-    //             return 'danger';
-    //     }
-    // }
-
-    saveProduct() {
-        this.submitted = true;
-
-        if (this.product.name?.trim()) {
-            if (this.product.id) {
-                this.products[this.findIndexById(this.product.id)] = this.product;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Updated',
-                    life: 3000
-                });
-            } else {
-                this.product.id = this.createId();
-                this.product.image = 'product-placeholder.svg';
-                this.products.push(this.product);
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Created',
-                    life: 3000
-                });
-            }
-
-            this.products = [...this.products];
-            this.articleDialog = false;
-            this.product = {};
-        }
+    // Get margin CSS class
+    getMarginClass(): string {
+        const margin = this.calculateMargin();
+        if (margin === null) return '';
+        if (margin < 10) return 'profit-low';
+        if (margin < 30) return 'profit-medium';
+        return 'profit-high';
     }
 }

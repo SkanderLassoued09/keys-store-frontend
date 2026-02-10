@@ -1,7 +1,6 @@
 <p-toolbar class="mb-6">
     <ng-template #start>
-        <p-button label="New" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
-        <!-- <p-button severity="danger" label="Delete" icon="pi pi-trash" outlined (onClick)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length" /> -->
+        <p-button label="Nouveau" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
     </ng-template>
 
     <ng-template #end>
@@ -11,128 +10,114 @@
 </p-toolbar>
 
 <p-table
-    #dt
-    [value]="products"
+    [value]="(clients$ | async) || []"
+    [loading]="(loading$ | async) || false"
     [rows]="10"
-    [columns]="cols"
     [paginator]="true"
-    [globalFilterFields]="['name', 'country.name', 'representative.name', 'status']"
-    [tableStyle]="{ 'min-width': '75rem' }"
-    [(selection)]="selectedProducts"
     [rowHover]="true"
-    dataKey="id"
-    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+    dataKey="_id"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
     [showCurrentPageReport]="true"
 >
-    <ng-template #caption>
-        <div class="flex items-center justify-between">
-            <h5 class="m-0">Manage Products</h5>
-            <p-iconfield>
-                <p-inputicon class="pi pi-search" />
-                <input pInputText type="text" placeholder="Search..." />
-            </p-iconfield>
-        </div>
-    </ng-template>
-    <ng-template #header>
+    <!-- TABLE HEADER -->
+    <ng-template pTemplate="header">
         <tr>
             <th style="width: 3rem">
                 <p-tableHeaderCheckbox />
             </th>
-            <th style="min-width: 16rem">Code</th>
-            <th pSortableColumn="name" style="min-width: 16rem">
+            <th pSortableColumn="name">
                 <div class="flex items-center gap-2">
-                    Name
-                    <p-sortIcon field="name" />
+                    Nom
+                    <p-sortIcon field="firstName" />
                 </div>
             </th>
-            <th>Image</th>
-            <th pSortableColumn="price" style="min-width: 8rem">
+            <th pSortableColumn="lastName">
                 <div class="flex items-center gap-2">
-                    Price
-                    <p-sortIcon field="price" />
+                    Prénom
+                    <p-sortIcon field="lastName" />
                 </div>
             </th>
-            <th pSortableColumn="category" style="min-width: 10rem">
+            <th pSortableColumn="phone">
                 <div class="flex items-center gap-2">
-                    Category
-                    <p-sortIcon field="category" />
+                    Téléphone
+                    <p-sortIcon field="phone" />
                 </div>
             </th>
-            <th pSortableColumn="rating" style="min-width: 12rem">
+            <th pSortableColumn="address">
                 <div class="flex items-center gap-2">
-                    Reviews
-                    <p-sortIcon field="rating" />
+                    Adresse
+                    <p-sortIcon field="address" />
                 </div>
             </th>
-            <th pSortableColumn="inventoryStatus" style="min-width: 12rem">
-                <div class="flex items-center gap-2">
-                    Status
-                    <p-sortIcon field="inventoryStatus" />
-                </div>
-            </th>
-            <th style="min-width: 12rem"></th>
+            <th style="min-width: 10rem">Actions</th>
         </tr>
     </ng-template>
-    <ng-template #body let-product>
+
+    <!-- TABLE BODY -->
+    <ng-template pTemplate="body" let-client>
         <tr>
-            <td style="width: 3rem">
-                <p-tableCheckbox [value]="product" />
-            </td>
-            <td style="min-width: 12rem">{{ product.code }}</td>
-            <td style="min-width: 16rem">{{ product.name }}</td>
             <td>
-                <img [src]="'https://primefaces.org/cdn/primeng/images/demo/product/' + product.image" [alt]="product.name" style="width: 64px" class="rounded" />
+                <p-tableCheckbox [value]="client" />
             </td>
-            <td>{{ product.price | currency: 'USD' }}</td>
-            <td>{{ product.category }}</td>
+            <td>{{ client.firstName }}</td>
+            <td>{{ client.lastName }}</td>
+            <td>{{ client.phone }}</td>
+            <td>{{ client.address }}</td>
             <td>
-                <p-rating [(ngModel)]="product.rating" [readonly]="true" />
+                <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" (click)="editClient(client)" pTooltip="Modifier" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteClient(client)" pTooltip="Supprimer" />
             </td>
-            <td>
-                <!-- <p-tag [value]="product.inventoryStatus" [severity]="getSeverity('')" /> -->
-            </td>
-            <td>
-                <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true" (click)="editProduct(product)" />
-                <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true" (click)="deleteProduct(product)" />
-            </td>
+        </tr>
+    </ng-template>
+
+    <!-- EMPTY MESSAGE -->
+    <ng-template pTemplate="emptymessage">
+        <tr>
+            <td colspan="6" class="text-center">Aucun client trouvé.</td>
         </tr>
     </ng-template>
 </p-table>
 
-<p-dialog [(visible)]="articleDialog" [style]="{ width: '500px' }" header="Article Details" [modal]="true" [closable]="true">
-    <form [formGroup]="clientForm" class="flex flex-col gap-5" (ngSubmit)="onSubmit()">
-        <!-- 🔹 Name -->
-        <div>
-            <label for="name" class="block font-bold mb-2">Name</label>
-            <input id="name" type="text" pInputText formControlName="name" placeholder="Enter article name" />
-            <small class="text-red-500" *ngIf="submitted && clientForm.get('name')?.invalid"> Name is required. </small>
+<!-- EDIT/CREATE DIALOG -->
+<p-dialog [(visible)]="articleDialog" [style]="{ width: '500px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" styleClass="client-dialog">
+    <form [formGroup]="clientForm" class="flex flex-col gap-4" (ngSubmit)="onSubmit()">
+        <!-- Name -->
+        <div class="form-field">
+            <label for="firstName" class="block font-bold mb-2"> Nom <span class="required">*</span> </label>
+            <input id="firstName" type="text" pInputText formControlName="firstName" placeholder="Entrez le nom" class="w-full" />
+            <small class="error-message" *ngIf="submitted && clientForm.get('firstName')?.invalid"> Le nom est obligatoire </small>
         </div>
- <!-- 🔹 Name -->
-        <div>
-            <label for="name" class="block font-bold mb-2">Last Name</label>
-            <input id="name" type="text" pInputText formControlName="lastName" placeholder="Enter client last name" />
-            <small class="text-red-500" *ngIf="submitted && clientForm.get('lastName')?.invalid"> lastName is required. </small>
+
+        <!-- Last Name -->
+        <div class="form-field">
+            <label for="lastName" class="block font-bold mb-2"> Prénom <span class="required">*</span> </label>
+            <input id="lastName" type="text" pInputText formControlName="lastName" placeholder="Entrez le prénom" class="w-full" />
+            <small class="error-message" *ngIf="submitted && clientForm.get('lastName')?.invalid"> Le prénom est obligatoire </small>
         </div>
-        <!-- 🔹 Name -->
-        <div>
-            <label for="name" class="block font-bold mb-2">Phone number</label>
-            <input id="name" type="text" pInputText formControlName="phone" placeholder="Enter client phone" />
-            <small class="text-red-500" *ngIf="submitted && clientForm.get('phone')?.invalid"> phone is required. </small>
+
+        <!-- Phone -->
+        <div class="form-field">
+            <label for="phone" class="block font-bold mb-2"> Téléphone <span class="required">*</span> </label>
+            <input id="phone" type="text" pInputText formControlName="phone" placeholder="Entrez le numéro de téléphone" class="w-full" />
+            <small class="error-message" *ngIf="submitted && clientForm.get('phone')?.invalid"> Le téléphone est obligatoire </small>
         </div>
-         <!-- 🔹 Name -->
-        <div>
-            <label for="name" class="block font-bold mb-2">Address</label>
-            <input id="name" type="text" pInputText formControlName="adress" placeholder="Enter article adress" />
-            <small class="text-red-500" *ngIf="submitted && clientForm.get('adress')?.invalid"> adress is required. </small>
+
+        <!-- Address -->
+        <div class="form-field">
+            <label for="address" class="block font-bold mb-2"> Adresse <span class="required">*</span> </label>
+            <input id="address" type="text" pInputText formControlName="address" placeholder="Entrez l'adresse" class="w-full" />
+            <small class="error-message" *ngIf="submitted && clientForm.get('address')?.invalid"> L'adresse est obligatoire </small>
         </div>
-    
-       
     </form>
 
     <ng-template #footer>
-        <p-button label="Cancel" icon="pi pi-times" text (click)="hideDialog()" />
-        <p-button label="Save" icon="pi pi-check" (click)="onSubmit()" />
+        <div class="dialog-footer">
+            <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (click)="hideDialog()" />
+            <p-button [label]="getSaveButtonLabel()" [icon]="isEditMode ? 'pi pi-save' : 'pi pi-check'" severity="primary" (click)="onSubmit()" [disabled]="clientForm.invalid" />
+        </div>
     </ng-template>
 </p-dialog>
 
 <p-confirmDialog [style]="{ width: '450px' }" />
+<p-toast />

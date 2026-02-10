@@ -60,8 +60,15 @@ export class AppMenu implements OnInit, OnDestroy {
                     items: [{ label: 'List Client', icon: 'pi pi-fw pi-home', routerLink: ['/pages/client'] }]
                 },
                 {
+                    label: 'Machine',
+                    items: [{ label: 'List machine', icon: 'pi pi-fw pi-home', routerLink: ['/pages/machine'] }]
+                },
+                {
                     label: 'Service',
-                    items: [{ label: 'Order Service', icon: 'pi pi-fw pi-home', routerLink: ['/order-service'] }]
+                    items: [
+                        { label: 'Order List', icon: 'pi pi-fw pi-home', routerLink: ['/pages/order-service-list'] },
+                        { label: 'Order Service', icon: 'pi pi-fw pi-home', routerLink: ['/order-service'] }
+                    ]
                 }
             ];
         } else {

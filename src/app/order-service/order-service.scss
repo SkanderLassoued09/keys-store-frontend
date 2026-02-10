@@ -1,0 +1,560 @@
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* ✅ FULL HEIGHT LAYOUT */
+.work-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr 320px;
+    gap: 1.5rem;
+    height: calc(100vh - 140px); /* Full viewport height minus header and margins */
+    overflow: hidden;
+}
+
+/* ✅ FULL HEIGHT PANELS */
+.left-panel,
+.center-panel,
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ✅ LEFT PANEL - Full height with scrollable categories if needed */
+.left-panel > .p-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.left-panel .p-card-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ✅ CENTER PANEL - Types card fixed, articles scrollable */
+.center-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.center-panel > .p-card:first-child {
+    flex-shrink: 0; /* Types card stays fixed */
+}
+
+.center-panel > .p-card.articles-card {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Critical for flexbox scrolling */
+}
+
+.center-panel .articles-card .p-card-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.center-panel .table-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.center-panel .p-table-wrapper {
+    overflow-y: auto;
+}
+
+.panel-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.panel-title.blue {
+    color: #6366f1;
+}
+
+/* Categories */
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.category {
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    background: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.category.active {
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    color: #fff;
+}
+
+/* Stats */
+.divider {
+    height: 1px;
+    background: #eee;
+    margin: 1rem 0;
+}
+
+.stats-title {
+    font-size: 0.7rem;
+    color: #888;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+.badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+.badge.blue {
+    background: #3b82f6;
+    color: #fff;
+}
+.badge.green {
+    background: #10b981;
+    color: #fff;
+}
+
+/* Types */
+.type-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.type {
+    padding: 0.4rem 0.7rem;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.type:hover {
+    background: #f3f4f6;
+}
+
+.type.active {
+    background: #6366f1;
+    color: #fff;
+}
+
+/* Table */
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+}
+
+.mono {
+    font-family: monospace;
+}
+
+.tag {
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+}
+
+.tag.green {
+    background: #10b981;
+    color: #fff;
+}
+.tag.red {
+    background: #ef4444;
+    color: #fff;
+}
+.tag.blue {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.btn-add {
+    background: #10b981;
+    color: #fff;
+    border: none;
+    padding: 0.4rem 0.7rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-add:hover {
+    background: #059669;
+}
+
+/* ===== Right panel card ===== */
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.selected-card {
+    background: #ffffff;
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    padding: 1rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 1px 3px 0 rgba(0, 0, 0, 0.1),
+        0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    min-height: 0; /* Critical for flexbox scrolling */
+}
+
+/* ✅ SELECTED HEADER - Fixed at top */
+.selected-header {
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.selected-header h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.selected-header small {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+/* ===== SCROLLABLE Selected list ===== */
+.selected-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-right: 0.5rem; /* Space for scrollbar */
+    margin-bottom: 1rem;
+    min-height: 0; /* Critical for flexbox scrolling */
+
+    /* Custom scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.selected-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.selected-list::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.selected-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.selected-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ===== Article item ===== */
+.selected-item {
+    position: relative;
+    background: #f9fafb;
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 0.9rem;
+    padding-right: 2.5rem; /* Make room for remove button */
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+/* ===== SELECTED STYLE (like your image) ===== */
+.selected-item.selected {
+    background: #eef2ff; /* soft blue */
+    border-color: #c7d2fe;
+}
+
+/* left blue indicator */
+.selected-item.selected::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    background: #6366f1;
+    border-radius: 2px;
+}
+
+/* ===== Title & ref ===== */
+.selected-item strong {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.selected-item small {
+    font-size: 0.7rem;
+    color: var(--text-color-secondary);
+}
+
+/* ===== Labels ===== */
+.selected-item label {
+    margin-top: 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+}
+
+/* ===== Inputs ===== */
+.selected-item .p-inputnumber,
+.selected-item .p-select {
+    width: 100%;
+}
+
+/* ===== Time badge ===== */
+.time {
+    margin-top: 0.4rem;
+    align-self: flex-start;
+    background: #e0e7ff;
+    color: #3730a3;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 500;
+}
+
+/* ✅ ACTIONS - Fixed at bottom */
+.actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+}
+
+.btn-outline {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: 500;
+}
+
+.btn-outline:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-outline.red {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.btn-outline.red:hover:not(:disabled) {
+    background: #fef2f2;
+}
+
+.btn-outline.blue {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.btn-outline.blue:hover:not(:disabled) {
+    background: #eff6ff;
+}
+
+/* ✅ CONFIRM BUTTON - Fixed at bottom */
+.btn-confirm {
+    width: 100%;
+    background: #10b981;
+    color: #fff;
+    border: none;
+    padding: 0.7rem;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-confirm:hover:not(:disabled) {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+.btn-confirm:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* Remove button for selected items */
+.btn-remove {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+    padding: 0;
+    z-index: 1;
+}
+
+.btn-remove:hover {
+    background: #dc2626;
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.btn-remove i {
+    font-size: 0.7rem;
+}
+
+/* ===== Dialog ===== */
+.article-dialog {
+    .p-dialog-content {
+        padding: 1.25rem;
+    }
+}
+
+.dialog-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+}
+
+.dialog-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.required {
+    color: #ef4444;
+}
+
+.article-info {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.article-info strong {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.article-info small {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.quantity-input {
+    width: 120px;
+}
+
+.hint {
+    font-size: 0.7rem;
+    color: #6b7280;
+}
+
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #9ca3af;
+}
+
+.empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+/* ✅ Responsive adjustments */
+@media (max-height: 800px) {
+    .work-layout {
+        height: calc(100vh - 120px);
+    }
+}
+
+@media (max-height: 600px) {
+    .work-layout {
+        height: calc(100vh - 100px);
+    }
+}
+
+/* ✅ Utility classes */
+.mb-3 {
+    margin-bottom: 1rem;
+}
+
+.w-full {
+    width: 100%;
+}

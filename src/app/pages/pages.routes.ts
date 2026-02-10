@@ -6,7 +6,8 @@ import { Article } from '@/article/article';
 import { Employee } from '@/employee/employee';
 import { Provider } from '@/provider/provider';
 import { Client } from '@/client/client';
-import { OrderService } from '@/order-service/order-service';
+import { OrderList } from '@/order-service-list/order-service-list';
+import { MachineList } from '@/machine/machine';
 
 export default [
     { path: 'documentation', component: Documentation },
@@ -16,7 +17,8 @@ export default [
     { path: 'employee', component: Employee },
     { path: 'provider', component: Provider },
     { path: 'client', component: Client },
-    // { path: 'order-service', component: OrderService },
+    { path: 'machine', component: MachineList },
+    { path: 'order-service-list', component: OrderList },
     { path: 'empty', component: Empty },
     { path: '**', redirectTo: '/notfound' }
 ] as Routes;

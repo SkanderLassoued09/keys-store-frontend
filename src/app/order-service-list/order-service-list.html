@@ -1,0 +1,154 @@
+<p-toolbar class="mb-6">
+    <ng-template #start>
+        <p-button label="Nouvel ordre de travail" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
+    </ng-template>
+
+    <ng-template #end>
+        <p-fileUpload mode="basic" accept=".csv,.xlsx" [maxFileSize]="1000000" label="Import" chooseLabel="Import" auto customUpload class="mr-2 inline-block" [chooseButtonProps]="{ severity: 'secondary' }" />
+    </ng-template>
+</p-toolbar>
+
+<p-table
+    [value]="(order$ | async) || []"
+    [loading]="(loading$ | async) || false"
+    [rows]="10"
+    [paginator]="true"
+    [rowHover]="true"
+    dataKey="_id"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
+    [showCurrentPageReport]="true"
+>
+    <!-- TABLE HEADER -->
+    <ng-template pTemplate="header">
+        <tr>
+            <!-- <th style="width: 3rem"><p-tableHeaderCheckbox /></th> -->
+            <th>Nom</th>
+            <th>Quantité</th>
+            <th>Employé</th>
+            <th>Durée</th>
+            <th>Prix</th>
+            <th>Statut</th>
+            <th style="min-width: 10rem">Actions</th>
+        </tr>
+    </ng-template>
+
+    <!-- TABLE BODY -->
+    <ng-template pTemplate="body" let-item>
+        <tr>
+            <!-- <td><p-tableCheckbox [value]="item" /></td> -->
+            <td>{{ item.name || '-' }}</td>
+            <td>{{ item.quantity || '-' }}</td>
+            <td>{{ item.employee || '-' }}</td>
+            <td>{{ item.duration|| '-' }}</td>
+            <td>{{ item.price ? (item.price | currency: 'TND') : '-' }}</td>
+            <td>
+                <p-tag [value]="getStatusLabel(item.status)" [severity]="getStatusSeverity(item.status)" />
+            </td>
+            <td>
+                <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" (click)="editOrder(item)" pTooltip="Modifier" />
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteOrder(item)" pTooltip="Supprimer" />
+            </td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<!-- ORDER DIALOG -->
+<p-dialog [(visible)]="orderDialog" [style]="{ width: '700px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" styleClass="order-dialog">
+    <form [formGroup]="orderForm" class="order-form" (ngSubmit)="saveOrder()">
+        <!-- Basic Information Section -->
+        <div class="form-section">
+            <label class="section-label">Informations de base</label>
+
+            <div class="form-row">
+                <div class="form-field flex-2">
+                    <label for="name">Nom <span class="required">*</span></label>
+                    <input id="name" type="text" pInputText formControlName="name" placeholder="Nom de l'ordre de travail" />
+                    <small class="error-message" *ngIf="submitted && orderForm.get('name')?.invalid"> Le nom est obligatoire </small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="description">Description</label>
+                    <textarea id="description" pInputTextarea formControlName="description" placeholder="Description détaillée..." rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment Section -->
+        <div class="form-section">
+            <label class="section-label">Affectation</label>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="client">Client <span class="required">*</span></label>
+                    <p-select id="client" formControlName="client" [options]="(client$ | async) ?? []" optionLabel="name" optionValue="id" placeholder="Sélectionner un client" [filter]="true" filterPlaceholder="Rechercher..." />
+                    <small class="error-message" *ngIf="submitted && orderForm.get('client')?.invalid"> Le client est obligatoire </small>
+                </div>
+
+                <div class="form-field">
+                    <label for="employee">Employé</label>
+                    <p-select id="employee" formControlName="employee" [options]="(employee$ | async) ?? []" optionLabel="name" optionValue="id" placeholder="Sélectionner un employé" [filter]="true" filterPlaceholder="Rechercher..." />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="machine">Machine</label>
+                    <p-select
+                        id="machine"
+                        formControlName="machine"
+                        [options]="(machine$ | async) ?? []"
+                        optionLabel="name"
+                        optionValue="id"
+                        placeholder="Sélectionner une machine"
+                        [filter]="true"
+                        filterPlaceholder="Rechercher..."
+                        [showClear]="true"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing & Duration Section -->
+        <div class="form-section">
+            <label class="section-label">Prix et durée</label>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="price">Prix <span class="required">*</span></label>
+                    <p-inputNumber id="price" formControlName="price" mode="currency" currency="TND" locale="fr-TN" placeholder="0.00" />
+                    <small class="error-message" *ngIf="submitted && orderForm.get('price')?.invalid"> Le prix est obligatoire </small>
+                </div>
+
+                <div class="form-field">
+                    <label for="duration">Durée (minutes)</label>
+                    <p-inputNumber id="duration" formControlName="duration" [min]="0" suffix=" min" placeholder="0" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Section -->
+        <div class="form-section">
+            <label class="section-label">Statut</label>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="status">Statut <span class="required">*</span></label>
+                    <p-select id="status" formControlName="status" [options]="statusOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un statut" />
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <ng-template #footer>
+        <div class="dialog-footer">
+            <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (click)="hideDialog()" />
+            <p-button [label]="getSaveButtonLabel()" [icon]="isEditMode ? 'pi pi-save' : 'pi pi-check'" severity="primary" (click)="saveOrder()" [disabled]="orderForm.invalid" />
+        </div>
+    </ng-template>
+</p-dialog>
+
+<p-toast />
+<p-confirmDialog [style]="{ width: '450px' }" />

@@ -20,23 +20,23 @@ export class ProviderService {
 
     constructor(private readonly httpClient: HttpClient) {}
 
-    createProvider(provider: Provider): Observable<Provider> {
+    createProvider(provider: any): Observable<any> {
         return this.httpClient.post<Provider>(this.baseUrl, provider);
     }
 
-    getAllProviders(): Observable<Provider[]> {
-        return this.httpClient.get<Provider[]>(this.baseUrl);
+    getAllProviders(): Observable<any[]> {
+        return this.httpClient.get<any[]>(this.baseUrl);
     }
 
-    getProviderById(id: number): Observable<Provider> {
-        return this.httpClient.get<Provider>(`${this.baseUrl}/${id}`);
+    getProviderById(id: string): Observable<any> {
+        return this.httpClient.get<any>(`${this.baseUrl}/${id}`);
     }
 
-    updateProvider(id: number, provider: Partial<Provider>): Observable<Provider> {
-        return this.httpClient.put<Provider>(`${this.baseUrl}/${id}`, provider);
+    updateProvider(id: string, provider: Partial<any>): Observable<any> {
+        return this.httpClient.put<any>(`${this.baseUrl}/${id}`, provider);
     }
 
-    deleteProvider(id: number): Observable<void> {
+    deleteProvider(id: string): Observable<void> {
         return this.httpClient.delete<void>(`${this.baseUrl}/${id}`);
     }
 }

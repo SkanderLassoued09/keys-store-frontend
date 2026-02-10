@@ -1,0 +1,112 @@
+::ng-deep .order-dialog {
+    .p-dialog {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .p-dialog-header {
+        background: linear-gradient(to right, #667eea, #764ba2);
+        color: white;
+        padding: 1.5rem 2rem;
+
+        .p-dialog-title {
+            color: white;
+            font-weight: 600;
+        }
+
+        .p-dialog-header-icon {
+            color: white;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+        }
+    }
+
+    .p-dialog-content {
+        padding: 1.5rem 2rem;
+    }
+
+    .order-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .form-section {
+        padding: 1.25rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+
+    .section-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #495057;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .form-field {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        &.flex-2 {
+            flex: 2;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #495057;
+
+            .required {
+                color: #e74c3c;
+            }
+        }
+
+        .p-inputtext,
+        .p-inputtextarea,
+        .p-inputnumber,
+        .p-select,
+        .p-calendar {
+            width: 100%;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+    }
+
+    .p-dialog-footer {
+        padding: 1.25rem 2rem;
+        background: #fafafa;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+        }
+    }
+}

@@ -1,6 +1,4 @@
-import { Product, ProductService } from '@/pages/service/product.service';
-import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { Button } from 'primeng/button';
@@ -9,252 +7,142 @@ import { Dialog } from 'primeng/dialog';
 import { FileUpload } from 'primeng/fileupload';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { InputNumber } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
-import { RadioButton } from 'primeng/radiobutton';
-import { Rating } from 'primeng/rating';
-import { SelectModule } from 'primeng/select';
 import { Table, TableModule } from 'primeng/table';
-import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
-interface Column {
-    field: string;
-    header: string;
-    customExportHeader?: string;
-}
-
-interface ExportColumn {
-    title: string;
-    dataKey: string;
-}
+import { CommonModule } from '@angular/common';
+import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs';
+import * as ClientActions from '../store/client-store/client.actions';
+import * as ClientSelectors from '../store/client-store/client.selectors';
 
 @Component({
     selector: 'app-client',
-    imports: [
-        TableModule,
-        Dialog,
-        SelectModule,
-        ToastModule,
-        ToolbarModule,
-        ConfirmDialog,
-        InputTextModule,
-        TextareaModule,
-        CommonModule,
-        FileUpload,
-        FormsModule,
-        RadioButton,
-        Rating,
-        InputTextModule,
-        FormsModule,
-        InputNumber,
-        IconFieldModule,
-        InputIconModule,
-        Button,
-        ReactiveFormsModule
-    ],
-    providers: [MessageService, ConfirmationService, ProductService],
+    imports: [TableModule, Dialog, ToastModule, ToolbarModule, ConfirmDialog, InputTextModule, CommonModule, FileUpload, FormsModule, IconFieldModule, InputIconModule, Button, ReactiveFormsModule],
+    providers: [MessageService, ConfirmationService],
     templateUrl: './client.html',
     styleUrl: './client.scss'
 })
 export class Client {
-    onSubmit() {
-        throw new Error('Method not implemented.');
-    }
+    // Dialog state
+    articleDialog: boolean = false;
+    submitted: boolean = false;
+    isEditMode: boolean = false;
+    currentClientId: string | null = null;
 
-    providers: any[] = [];
+    // Form
     clientForm = new FormGroup({
-        name: new FormControl('', Validators.required),
+        firstName: new FormControl('', Validators.required),
         lastName: new FormControl('', Validators.required),
         phone: new FormControl('', Validators.required),
-        adress: new FormControl('', Validators.required),
-       
+        address: new FormControl('', Validators.required)
     });
-    articleDialog: boolean = false;
 
-    products!: Product[];
+    // NGRX
+    clients$: Observable<any[]>;
+    loading$: Observable<boolean>;
+    error$: Observable<string | null>;
 
-    product!: Product;
-
-    selectedProducts!: Product[] | null;
-
-    submitted: boolean = false;
-
-    statuses!: any[];
-
-    @ViewChild('dt') dt!: Table;
-
-    cols!: Column[];
-
-    exportColumns!: ExportColumn[];
-
-    constructor(
-        private productService: ProductService,
-        private messageService: MessageService,
-        private confirmationService: ConfirmationService,
-        private cd: ChangeDetectorRef
-    ) {}
-
-    exportCSV() {
-        this.dt.exportCSV();
+    constructor(private store: Store) {
+        this.clients$ = this.store.select(ClientSelectors.selectAllClients);
+        this.loading$ = this.store.select(ClientSelectors.selectClientLoading);
+        this.error$ = this.store.select(ClientSelectors.selectClientError);
     }
 
     ngOnInit() {
-        this.loadDemoData();
-    }
-
-    loadDemoData() {
-        this.productService.getProducts().then((data) => {
-            this.products = data;
-            this.cd.markForCheck();
+        this.store.dispatch(ClientActions.loadClient());
+        this.clients$.subscribe((clients) => {
+            console.log(clients);
         });
-
-        this.statuses = [
-            { label: 'INSTOCK', value: 'instock' },
-            { label: 'LOWSTOCK', value: 'lowstock' },
-            { label: 'OUTOFSTOCK', value: 'outofstock' }
-        ];
-
-        this.cols = [
-            { field: 'code', header: 'Code', customExportHeader: 'Product Code' },
-            { field: 'name', header: 'Name' },
-            { field: 'image', header: 'Image' },
-            { field: 'price', header: 'Price' },
-            { field: 'category', header: 'Category' }
-        ];
-
-        this.exportColumns = this.cols.map((col) => ({ title: col.header, dataKey: col.field }));
     }
 
+    // Open dialog for creating new client
     openNew() {
-        this.product = {};
+        this.isEditMode = false;
+        this.currentClientId = null;
+        this.clientForm.reset();
         this.submitted = false;
         this.articleDialog = true;
     }
 
-    editProduct(product: Product) {
-        this.product = { ...product };
+    // Open dialog for editing existing client
+    editClient(client: any) {
+        this.isEditMode = true;
+        this.currentClientId = client._id;
+
+        this.clientForm.patchValue({
+            firstName: client.firstName,
+            lastName: client.lastName,
+            phone: client.phone,
+            address: client.address
+        });
+
+        this.submitted = false;
         this.articleDialog = true;
     }
 
-    deleteSelectedProducts() {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete the selected products?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
-            },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => !this.selectedProducts?.includes(val));
-                this.selectedProducts = null;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Products Deleted',
-                    life: 3000
-                });
-            }
-        });
+    // Save client (handles both create and update)
+    onSubmit() {
+        this.submitted = true;
+
+        if (this.clientForm.invalid) {
+            return;
+        }
+
+        if (this.isEditMode && this.currentClientId) {
+            // Update existing client
+            this.store.dispatch(
+                ClientActions.updateClient({
+                    client: {
+                        id: this.currentClientId,
+                        ...this.clientForm.value
+                    }
+                })
+            );
+        } else {
+            // Create new client
+            this.store.dispatch(
+                ClientActions.createClient({
+                    client: this.clientForm.value
+                })
+            );
+        }
+
+        this.hideDialog();
     }
 
+    // Delete client
+    deleteClient(client: any) {
+        this.store.dispatch(
+            ClientActions.deleteClient({
+                id: client._id
+            })
+        );
+    }
+
+    // Hide dialog
     hideDialog() {
         this.articleDialog = false;
         this.submitted = false;
+        this.isEditMode = false;
+        this.currentClientId = null;
+        this.clientForm.reset();
     }
 
-    deleteProduct(product: Product) {
-        this.confirmationService.confirm({
-            message: 'Are you sure you want to delete ' + product.name + '?',
-            header: 'Confirm',
-            icon: 'pi pi-exclamation-triangle',
-            rejectButtonProps: {
-                label: 'No',
-                severity: 'secondary',
-                variant: 'text'
-            },
-            acceptButtonProps: {
-                severity: 'danger',
-                label: 'Yes'
-            },
-            accept: () => {
-                this.products = this.products.filter((val) => val.id !== product.id);
-                this.product = {};
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Deleted',
-                    life: 3000
-                });
-            }
-        });
+    // Get dialog title dynamically
+    getDialogTitle(): string {
+        return this.isEditMode ? 'Modifier un client' : 'Créer un client';
     }
 
-    findIndexById(id: string): number {
-        let index = -1;
-        for (let i = 0; i < this.products.length; i++) {
-            if (this.products[i].id === id) {
-                index = i;
-                break;
-            }
-        }
-
-        return index;
+    // Get save button label dynamically
+    getSaveButtonLabel(): string {
+        return this.isEditMode ? 'Enregistrer' : 'Créer le client';
     }
 
-    createId(): string {
-        let id = '';
-        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (var i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return id;
-    }
-
-    // getSeverity(status: string) {
-    //     switch (status) {
-    //         case 'INSTOCK':
-    //             return 'success';
-    //         case 'LOWSTOCK':
-    //             return 'warn';
-    //         case 'OUTOFSTOCK':
-    //             return 'danger';
-    //     }
-    // }
-
-    saveProduct() {
-        this.submitted = true;
-
-        if (this.product.name?.trim()) {
-            if (this.product.id) {
-                this.products[this.findIndexById(this.product.id)] = this.product;
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Updated',
-                    life: 3000
-                });
-            } else {
-                this.product.id = this.createId();
-                this.product.image = 'product-placeholder.svg';
-                this.products.push(this.product);
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Successful',
-                    detail: 'Product Created',
-                    life: 3000
-                });
-            }
-
-            this.products = [...this.products];
-            this.articleDialog = false;
-            this.product = {};
-        }
+    // Export CSV placeholder
+    exportCSV() {
+        // Implementation for CSV export if needed
+        console.log('Export CSV');
     }
 }

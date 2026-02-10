@@ -10,6 +10,7 @@ export class ArticleService {
     constructor(private readonly httpClient: HttpClient) {}
 
     createArticle(article: any): Observable<any> {
+        console.log(article);
         return this.httpClient.post<any>(this.baseUrl, article);
     }
 
@@ -25,7 +26,7 @@ export class ArticleService {
         return this.httpClient.put<any>(`${this.baseUrl}/${id}`, article);
     }
 
-    deleteArticle(id: number): Observable<void> {
+    deleteArticle(id: string): Observable<void> {
         return this.httpClient.delete<void>(`${this.baseUrl}/${id}`);
     }
 }

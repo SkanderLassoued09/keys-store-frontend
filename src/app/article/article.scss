@@ -1,0 +1,212 @@
+// article.scss
+::ng-deep .article-dialog {
+    .p-dialog {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .p-dialog-header {
+        background: linear-gradient(to right, #667eea, #764ba2);
+        color: white;
+        padding: 1.5rem 2rem;
+
+        .p-dialog-title {
+            color: white;
+            font-weight: 600;
+        }
+
+        .p-dialog-header-icon {
+            color: white;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+        }
+    }
+
+    .p-dialog-content {
+        padding: 1.5rem 2rem;
+    }
+
+    .article-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .form-section {
+        padding: 1.25rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+
+    .section-label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #495057;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    // Type Selection Grid
+    .type-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+    }
+
+    .type-option {
+        position: relative;
+        padding: 1rem;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: center;
+
+        &:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.15);
+        }
+
+        &.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+
+            .p-radiobutton .p-radiobutton-box {
+                border-color: #667eea;
+                background: #667eea;
+            }
+        }
+
+        .type-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .type-icon {
+            font-size: 2rem;
+        }
+
+        .type-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .p-radiobutton {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+    }
+
+    // Form Rows
+    .form-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .form-field {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        &.flex-2 {
+            flex: 2;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #495057;
+
+            .required {
+                color: #e74c3c;
+            }
+        }
+
+        .p-inputtext,
+        .p-inputnumber,
+        .p-select {
+            width: 100%;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+    }
+
+    // Profit Indicator
+    .profit-indicator {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+        .profit-label {
+            font-weight: 500;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .profit-value {
+            font-weight: 700;
+            font-size: 1.25rem;
+
+            &.profit-high {
+                color: #27ae60;
+            }
+
+            &.profit-medium {
+                color: #f39c12;
+            }
+
+            &.profit-low {
+                color: #e74c3c;
+            }
+        }
+    }
+
+    // Dialog Footer
+    .p-dialog-footer {
+        padding: 1.25rem 2rem;
+        background: #fafafa;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    // Responsive
+    @media (max-width: 768px) {
+        .type-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-row {
+            flex-direction: column;
+        }
+    }
+}
