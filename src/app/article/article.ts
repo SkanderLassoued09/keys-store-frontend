@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, inject, ViewChild } from '@angular/core';
 import { ButtonModule, Button } from 'primeng/button';
 import { ConfirmDialog, ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputNumber, InputNumberModule } from 'primeng/inputnumber';
@@ -22,8 +22,15 @@ import { Observable, tap } from 'rxjs';
 import * as ArticleAction from '../store/article-store/article.actions';
 import * as ProviderAction from '../store/provider-store/provider.actions';
 import * as ArticleSelectors from '../store/article-store/article.selectors';
+import * as TransferActions from '../store/stock-transfer-store/stock-transfer.actions';
+import * as TransferSelectors from '../store/stock-transfer-store/stock-transfer.selectors';
 import { Store } from '@ngrx/store';
 import { selectProvidersForDropdown } from '@/store/provider-store/provider.selectors';
+import { Actions, ofType } from '@ngrx/effects';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TooltipModule } from 'primeng/tooltip';
+import { TagModule } from 'primeng/tag';
+import { DatePipe } from '@angular/common';
 
 export interface Article {
     name?: string;
@@ -58,9 +65,11 @@ export interface Article {
         IconFieldModule,
         InputIconModule,
         Button,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        TooltipModule,
+        TagModule
     ],
-    providers: [MessageService, ConfirmationService, ProductService],
+    providers: [MessageService, ConfirmationService, ProductService, DatePipe],
     templateUrl: './article.html',
     styleUrl: './article.scss'
 })
@@ -71,73 +80,39 @@ export class Article {
     isEditMode: boolean = false;
     currentArticleId: string | null = null;
 
-    // Article Types
+    // Stock transfer modal state
+    transferDialog: boolean = false;
+    transferArticle: any = null;
+    transferForm = new FormGroup({
+        quantity: new FormControl<number | null>(1, [Validators.required, Validators.min(1)])
+    });
+
+    // Transfer history dialog state
+    historyDialog: boolean = false;
+
+    // Threshold below which the magasin badge fires.
+    readonly LOW_SHOP_THRESHOLD = 3;
+
+    // Field initializer is an injection context, so inject() works here. We
+    // capture DestroyRef once and pass it explicitly to takeUntilDestroyed()
+    // calls made later in ngOnInit (which is NOT an injection context).
+    private readonly destroyRef = inject(DestroyRef);
+
+    // Article Types — value === label so the order-service left panel
+    // (driven by selectUniqueTypes) shows real business labels.
     articleTypes = [
-        { value: 'Keys', label: 'Clés', icon: 'pi pi-key' },
-        { value: 'CarKeys', label: 'Clés Auto', icon: 'pi pi-car' },
-        { value: 'Remote', label: 'Télécommande', icon: 'pi pi-wifi' },
-        { value: 'stamp', label: 'Tampon', icon: 'pi pi-bookmark' },
-        { value: 'KeyChain', label: 'Porte-clés', icon: 'pi pi-link' },
-        { value: 'Other', label: 'Autre', icon: 'pi pi-ellipsis-h' }
-    ];
-
-    // Categories depending on type
-    aricleByType = {
-        Keys: [
-            { value: 'simple', label: 'Simple' },
-            { value: 'a pointe', label: 'À pointe' },
-            { value: 'double panneton', label: 'Double panneton' },
-            { value: 'tubulaire', label: 'Tubulaire' }
-        ],
-        CarKeys: [
-            { value: 'VVDI', label: 'VVDI' },
-            { value: 'Smart VVDI', label: 'Smart VVDI' },
-            { value: '433Mhz-commande', label: '433Mhz-commande' },
-            { value: '315Mhz-commande', label: '315Mhz-commande' },
-            { value: 'other', label: 'Autre' }
-        ],
-        Remote: [
-            { value: 'universelle-bleu', label: 'Universelle Bleu' },
-            { value: 'selca-L', label: 'Selca-L' },
-            { value: 'selca-V', label: 'Selca-V' },
-            { value: 'somfy', label: 'Somfy' },
-            { value: 'sommer', label: 'Sommer' },
-            { value: 'nice', label: 'Nice' },
-            { value: 'bennica', label: 'Bennica' },
-            { value: 'other', label: 'Autre' }
-        ],
-        stamp: [
-            { value: '4911', label: '4911' },
-            { value: '4912', label: '4912' },
-            { value: '4913', label: '4913' },
-            { value: 'R-30', label: 'R-30' },
-            { value: 'R40', label: 'R40' },
-            { value: 'dateur', label: 'Dateur' },
-            { value: 'RIB', label: 'RIB' },
-            { value: 'rubber', label: 'Rubber' },
-            { value: 'other', label: 'Autre' }
-        ],
-        KeyChain: [
-            { value: 'metal', label: 'Métal' },
-            { value: 'plastic', label: 'Plastique' },
-            { value: 'leather', label: 'Cuir' },
-            { value: 'other', label: 'Autre' }
-        ],
-        Other: [{ value: 'other', label: 'Autre' }]
-    } as any;
-
-    // Selected categories array
-    selectedArticleType = [];
-    selectedCategories = [
-        { value: 'KeyHome', label: 'Clé maison' },
-        { value: 'KeyCar', label: 'Clé voiture' }
+        { value: 'Clé maison', label: 'Clé maison', icon: 'pi pi-home' },
+        { value: 'Clé voiture', label: 'Clé voiture', icon: 'pi pi-car' },
+        { value: 'Télécommande', label: 'Télécommande', icon: 'pi pi-wifi' },
+        { value: 'Tampon', label: 'Tampon', icon: 'pi pi-bookmark' },
+        { value: 'Porte-clés', label: 'Porte-clés', icon: 'pi pi-link' },
+        { value: 'Autre', label: 'Autre', icon: 'pi pi-ellipsis-h' }
     ];
 
     providers: any[] = [];
 
     articleForm = new FormGroup({
         type: new FormControl('', Validators.required),
-        articleType: new FormControl('', Validators.required),
         name: new FormControl('', Validators.required),
         reference: new FormControl(''),
         purchasePrice: new FormControl(null, Validators.required),
@@ -146,7 +121,10 @@ export class Article {
         shopQuantity: new FormControl(null),
         emplacement: new FormControl(''),
         fournisseur: new FormControl(''),
-        category: new FormControl('')
+        featured: new FormControl(false),
+        // Commission percentage applied per sale. Snapshotted onto each
+        // WorkOrder line at confirmation; computed prime stays in DT.
+        commissionPercent: new FormControl<number | null>(0, [Validators.min(0)])
     });
 
     // NGRX
@@ -154,17 +132,35 @@ export class Article {
     providers$: Observable<any[]> | undefined;
     loading$: Observable<boolean> | undefined;
     error$: Observable<string | null> | undefined;
+    transfers$: Observable<any[]> | undefined;
+    transferLoading$: Observable<boolean> | undefined;
 
-    constructor(private store: Store) {
+    constructor(
+        private store: Store,
+        private actions$: Actions
+    ) {
         this.article$ = this.store.select(ArticleSelectors.selectAllArticles);
         this.loading$ = this.store.select(ArticleSelectors.selectArticleLoading);
         this.error$ = this.store.select(ArticleSelectors.selectArticleError);
         this.providers$ = this.store.select(selectProvidersForDropdown);
+        this.transfers$ = this.store.select(TransferSelectors.selectAllTransfers);
+        this.transferLoading$ = this.store.select(TransferSelectors.selectTransferLoading);
     }
 
     ngOnInit() {
         this.store.dispatch(ArticleAction.loadArticle());
         this.store.dispatch(ProviderAction.loadProvider());
+
+        // Close the transfer modal once the create succeeds; the article
+        // store is auto-refreshed by the chained effect.
+        // Note: takeUntilDestroyed() needs an explicit DestroyRef here because
+        // ngOnInit is not an injection context — calling without one throws
+        // NG0203 at runtime, silently breaking the subscription.
+        this.actions$.pipe(ofType(TransferActions.createTransferSuccess), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.transferDialog = false;
+            this.transferArticle = null;
+            this.transferForm.reset({ quantity: 1 });
+        });
     }
 
     // Open dialog for creating new article
@@ -174,10 +170,6 @@ export class Article {
         this.articleForm.reset();
         this.submitted = false;
         this.articleDialog = true;
-    }
-    onTypeChange(typeValue: string) {
-        this.selectedArticleType = this.aricleByType[typeValue] || [];
-        this.articleForm.patchValue({ category: null }); // reset category selection
     }
 
     // Open dialog for editing existing article
@@ -196,7 +188,9 @@ export class Article {
             stockQuantity: article.stockQuantity,
             shopQuantity: article.shopQuantity,
             emplacement: article.emplacement,
-            fournisseur: article.fournisseur
+            fournisseur: article.fournisseur,
+            featured: article.featured ?? false,
+            commissionPercent: article.commissionPercent ?? 0
         });
 
         this.submitted = false;
@@ -240,6 +234,96 @@ export class Article {
         this.saveArticle();
     }
 
+    // ===== Stock transfer =====
+
+    openTransferDialog(article: any) {
+        this.transferArticle = article;
+
+        // Stock-aware max validator: refresh per article so the previous
+        // article's max doesn't leak into a new dialog.
+        const max = Number(article?.stockQuantity ?? 0);
+        const qtyCtrl = this.transferForm.get('quantity');
+        qtyCtrl?.setValidators([Validators.required, Validators.min(1), Validators.max(max)]);
+        qtyCtrl?.updateValueAndValidity({ emitEvent: false });
+
+        this.transferForm.reset({ quantity: 1 });
+        this.transferDialog = true;
+    }
+
+    closeTransferDialog() {
+        this.transferDialog = false;
+        this.transferArticle = null;
+    }
+
+    // Quick-shortcut buttons (+1 / +5 / +10 / Max).
+    bumpTransfer(delta: number | 'max') {
+        if (!this.transferArticle) return;
+        const max = Number(this.transferArticle.stockQuantity ?? 0);
+        const ctrl = this.transferForm.get('quantity');
+        if (delta === 'max') {
+            ctrl?.setValue(max);
+            return;
+        }
+        const next = Math.min(max, Math.max(1, Number(ctrl?.value ?? 0) + delta));
+        ctrl?.setValue(next);
+    }
+
+    confirmTransfer() {
+        if (!this.transferArticle) return;
+        Object.keys(this.transferForm.controls).forEach((k) => this.transferForm.get(k)?.markAsTouched());
+        if (this.transferForm.invalid) return;
+
+        const v = this.transferForm.value;
+        this.store.dispatch(
+            TransferActions.createTransfer({
+                payload: {
+                    articleId: this.transferArticle._id,
+                    quantity: Number(v.quantity)
+                }
+            })
+        );
+    }
+
+    // Preview helpers used by the modal.
+    previewNewStock(): number | null {
+        if (!this.transferArticle) return null;
+        const qty = Number(this.transferForm.get('quantity')?.value ?? 0);
+        return Number(this.transferArticle.stockQuantity ?? 0) - qty;
+    }
+
+    previewNewShop(): number | null {
+        if (!this.transferArticle) return null;
+        const qty = Number(this.transferForm.get('quantity')?.value ?? 0);
+        return Number(this.transferArticle.shopQuantity ?? 0) + qty;
+    }
+
+    // ===== Transfer history =====
+
+    openHistoryDialog() {
+        this.store.dispatch(TransferActions.loadTransfers());
+        this.historyDialog = true;
+    }
+
+    closeHistoryDialog() {
+        this.historyDialog = false;
+    }
+
+    formatEmployee(emp: any): string {
+        if (!emp) return '—';
+        if (typeof emp === 'string') return '—';
+        return `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim() || '—';
+    }
+
+    formatArticleName(article: any): string {
+        if (!article) return '—';
+        if (typeof article === 'string') return '—';
+        return article.name ?? '—';
+    }
+
+    isShopLow(qty: number | null | undefined): boolean {
+        return Number(qty ?? 0) <= this.LOW_SHOP_THRESHOLD;
+    }
+
     // Delete article
     deleteArticle(article: any) {
         this.store.dispatch(
@@ -276,6 +360,13 @@ export class Article {
         if (!purchase || !selling || purchase === 0) return null;
 
         return Number((((selling - purchase) / purchase) * 100).toFixed(0));
+    }
+
+    // Live commission preview (DT). Used by the article modal preview card.
+    articleCommissionPreview(): number {
+        const price = Number(this.articleForm.get('sellingPrice')?.value ?? 0);
+        const percent = Number(this.articleForm.get('commissionPercent')?.value ?? 0);
+        return Math.round(((price * percent) / 100) * 1000) / 1000;
     }
 
     // Get margin CSS class

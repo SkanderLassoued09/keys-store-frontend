@@ -24,6 +24,7 @@ import * as OrderSelectors from '../store/order-service-store/order.service.sele
 import * as ClientSelectors from '../store/client-store/client.selectors';
 import * as ClientActions from '../store/client-store/client.actions';
 import * as EmployeeSelectors from '../store/employee-store/employee.selectors';
+import { displayEmployee, refId, WorkOrder } from '../store/order-service-store/work-order.model';
 // import * as EmployeeActions from '../store/employee-store/employee.actions';
 // import * as MachineSelectors from '../store/machine-store/machine.selectors';
 // import * as MachineActions from '../store/machine-store/machine.actions';
@@ -82,12 +83,15 @@ export class OrderList {
     });
 
     // NGRX Observables
-    order$: Observable<any[]>;
+    order$: Observable<WorkOrder[]>;
     loading$: Observable<boolean>;
     error$: Observable<string | null>;
     client$: Observable<any[]> | undefined;
     employee$: Observable<any[]> | undefined;
     machine$: Observable<any[]> | undefined;
+
+    // Template helper — handles populated object OR raw ObjectId string.
+    readonly displayEmployee = displayEmployee;
 
     constructor(private store: Store) {
         this.order$ = this.store.select(OrderSelectors.selectAllOrders);
@@ -128,9 +132,9 @@ export class OrderList {
             description: order.description,
             price: order.price,
             duration: order.duration,
-            employee: order.employee,
-            client: order.client,
-            machine: order.machine || null,
+            employee: refId(order.employee) ?? '',
+            client: refId(order.client) ?? '',
+            machine: refId(order.machine),
             status: order.status
         });
 

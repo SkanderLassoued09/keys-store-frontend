@@ -15,12 +15,14 @@ import * as MachineEffects from '../src/app/store/machine-store/machine.effects'
 import * as ProviderEffects from '../src/app/store/provider-store/provider.effects';
 import * as EmployeeEffects from '../src/app/store/employee-store/employee.effects';
 import * as OrderServiceEffects from '../src/app/store/order-service-store/order.service.effects';
+import * as StockTransferEffects from '../src/app/store/stock-transfer-store/stock-transfer.effects';
 import { clientReducer } from '@/store/client-store/client.reducer';
 import { employeeReducer } from '@/store/employee-store/employee.reducer';
 import { providerReducer } from '@/store/provider-store/provider.reducer';
 import { MessageService } from 'primeng/api';
 import { orderReducer } from '@/store/order-service-store/order.service.reducer';
 import { machineReducer } from '@/store/machine-store/machine.reducer';
+import { stockTransferReducer } from '@/store/stock-transfer-store/stock-transfer.reducer';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -29,8 +31,8 @@ export const appConfig: ApplicationConfig = {
         provideAnimationsAsync(),
         MessageService,
         providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
-        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer }),
-        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects),
+        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer, stockTransfer: stockTransferReducer }),
+        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects, StockTransferEffects),
         provideStoreDevtools({ maxAge: 25 })
     ]
 };

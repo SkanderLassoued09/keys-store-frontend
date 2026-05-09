@@ -9,6 +9,7 @@
 </p-toolbar>
 
 <p-table
+    #dt
     [value]="(order$ | async) || []"
     [loading]="(loading$ | async) || false"
     [rows]="10"
@@ -16,9 +17,16 @@
     [rowHover]="true"
     dataKey="_id"
     [tableStyle]="{ 'min-width': '75rem' }"
+    [globalFilterFields]="['name', 'status', 'employee.firstName', 'employee.lastName', 'client.name']"
     currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
     [showCurrentPageReport]="true"
 >
+    <ng-template pTemplate="caption">
+        <div class="flex justify-end">
+            <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Rechercher..." />
+        </div>
+    </ng-template>
+
     <!-- TABLE HEADER -->
     <ng-template pTemplate="header">
         <tr>
@@ -39,7 +47,7 @@
             <!-- <td><p-tableCheckbox [value]="item" /></td> -->
             <td>{{ item.name || '-' }}</td>
             <td>{{ item.quantity || '-' }}</td>
-            <td>{{ item.employee || '-' }}</td>
+            <td>{{ displayEmployee(item.employee) }}</td>
             <td>{{ item.duration|| '-' }}</td>
             <td>{{ item.price ? (item.price | currency: 'TND') : '-' }}</td>
             <td>

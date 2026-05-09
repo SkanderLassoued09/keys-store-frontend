@@ -1,7 +1,7 @@
 <p-toolbar class="mb-6">
     <ng-template #start>
         <p-button label="New" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
-        <!-- <p-button severity="danger" label="Delete" icon="pi pi-trash" outlined (onClick)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length" /> -->
+        <p-button label="Historique des transferts" icon="pi pi-history" severity="secondary" outlined (onClick)="openHistoryDialog()" />
     </ng-template>
 
     <ng-template #end>
@@ -11,6 +11,7 @@
 <!-- <div *ngIf="loading$ | async">Loading...</div> -->
 <!-- <div *ngIf="error$ | async as error">Error: {{ error }}</div> -->
 <p-table
+    #dt
     [value]="(article$ | async) || []"
     [loading]="(loading$ | async) || false"
     [rows]="10"
@@ -18,9 +19,16 @@
     [rowHover]="true"
     dataKey="id"
     [tableStyle]="{ 'min-width': '75rem' }"
+    [globalFilterFields]="['name', 'reference', 'type', 'articleType', 'category']"
     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
     [showCurrentPageReport]="true"
 >
+    <ng-template pTemplate="caption">
+        <div class="flex justify-end">
+            <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Rechercher..." />
+        </div>
+    </ng-template>
+
     <!-- TABLE HEADER -->
     <ng-template pTemplate="header">
         <tr>
@@ -30,13 +38,11 @@
             <th>Référence</th>
             <th>Prix d’achat</th>
             <th>Prix de vente</th>
-            <th>Quantité en stock</th>
-            <th>Quantité en magasin</th>
+            <th>Stock Maison</th>
+            <th>Stock Magasin</th>
             <th>Fournisseur</th>
             <th>Type</th>
-            <th>Article type</th>
-            <th>Catégorie</th>
-            <!-- <th>Category</th> -->
+            <th>Vedette</th>
             <th style="min-width: 10rem">Actions</th>
         </tr>
     </ng-template>
@@ -51,14 +57,18 @@
             <td>{{ item.purchasePrice }}</td>
             <td>{{ item.sellingPrice }}</td>
             <td>{{ item.stockQuantity }}</td>
-            <td>{{ item.shopQuantity }}</td>
+            <td>
+                <span style="margin-right: 0.4rem">{{ item.shopQuantity }}</span>
+                <p-tag *ngIf="isShopLow(item.shopQuantity)" value="Stock magasin faible" severity="warn" />
+            </td>
             <td>{{ item.fournisseur }}</td>
             <td>{{ item.type }}</td>
-            <td>{{ item.articleType }}</td>
-            <td>{{ item.category }}</td>
-            <!-- <td>{{ item.category }}</td> -->
+            <td>
+                <i *ngIf="item.featured" class="pi pi-star-fill" style="color: #f59e0b" pTooltip="Article vedette"></i>
+            </td>
 
             <td>
+                <p-button icon="pi pi-arrow-right" [text]="true" [rounded]="true" severity="success" (click)="openTransferDialog(item)" pTooltip="Transférer vers magasin" />
                 <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" (click)="editArticle(item)" pTooltip="Modifier" />
                 <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteArticle(item)" pTooltip="Supprimer" />
             </td>
@@ -75,7 +85,7 @@
         <div class="form-section">
             <label class="section-label">Type d'article <span class="required">*</span></label>
             <div class="type-grid">
-                <div class="type-option" *ngFor="let type of articleTypes" [class.selected]="articleForm.get('type')?.value === type.value" (click)="articleForm.patchValue({type: type.value}); onTypeChange(type.value)">
+                <div class="type-option" *ngFor="let type of articleTypes" [class.selected]="articleForm.get('type')?.value === type.value" (click)="articleForm.patchValue({type: type.value})">
                     <p-radiobutton name="type" [value]="type.value" formControlName="type" [inputId]="type.value"> </p-radiobutton>
                     <div class="type-content">
                         <i [class]="type.icon"></i>
@@ -106,47 +116,6 @@
             </div>
         </div>
 
-        <div class="form-section">
-            <label class="section-label">Catégorie</label>
-
-            <div class="form-row">
-                <!-- Category (dynamic) -->
-                <div class="form-field flex-2">
-                    <label for="category">Type <span class="required">*</span></label>
-                    <p-select
-                        [options]="selectedArticleType"
-                        [appendTo]="'body'"
-                        formControlName="articleType"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Sélectionner un article type"
-                        [filter]="true"
-                        filterPlaceholder="Rechercher..."
-                        [disabled]="!selectedArticleType.length"
-                    >
-                    </p-select>
-                    <small class="error-message" *ngIf="submitted && articleForm.get('category')?.invalid"> La catégorie est obligatoire </small>
-                </div>
-                <!-- Category (dynamic) -->
-                <div class="form-field flex-2">
-                    <label for="category">Catégorie <span class="required">*</span></label>
-                    <p-select
-                        [options]="selectedCategories"
-                        [appendTo]="'body'"
-                        formControlName="category"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Sélectionner une catégorie"
-                        [filter]="true"
-                        filterPlaceholder="Rechercher..."
-                        [disabled]="!selectedCategories.length"
-                    >
-                    </p-select>
-                    <small class="error-message" *ngIf="submitted && articleForm.get('category')?.invalid"> La catégorie est obligatoire </small>
-                </div>
-            </div>
-        </div>
-
         <!-- 🔹 Pricing -->
         <div class="form-section">
             <label class="section-label">Prix</label>
@@ -169,6 +138,55 @@
             <div class="profit-indicator" *ngIf="calculateMargin() !== null">
                 <span class="profit-label">Marge bénéficiaire:</span>
                 <span class="profit-value" [ngClass]="getMarginClass()"> +{{ calculateMargin() }}% </span>
+            </div>
+        </div>
+
+        <!-- 🔹 Commission section -->
+        <div class="rounded-lg border border-indigo-200 bg-indigo-50/40 p-4 mb-4">
+            <div class="flex items-center gap-2 mb-1">
+                <div class="flex items-center justify-center w-8 h-8 rounded-md bg-indigo-100 text-indigo-700">
+                    <i class="pi pi-percentage"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-semibold text-surface-900">Prime employé (commission)</span>
+                    <span class="text-xs text-surface-500">Définissez le pourcentage de commission que l'employé recevra sur chaque vente de cet article.</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-3 mt-3">
+                <!-- Percentage input -->
+                <div class="flex-1">
+                    <label for="commissionPercent" class="text-xs font-semibold text-surface-700 block mb-1">Pourcentage (%)</label>
+                    <p-inputNumber
+                        id="commissionPercent"
+                        formControlName="commissionPercent"
+                        [min]="0"
+                        [showButtons]="true"
+                        buttonLayout="horizontal"
+                        spinnerMode="horizontal"
+                        mode="decimal"
+                        [minFractionDigits]="0"
+                        [maxFractionDigits]="2"
+                        suffix=" %"
+                        inputStyleClass="text-center font-semibold"
+                    />
+                </div>
+
+                <!-- Live preview card -->
+                <div class="flex-1 flex flex-col gap-1 p-3 rounded-lg border border-indigo-200 bg-white">
+                    <span class="text-xs text-surface-500 uppercase tracking-wide">Aperçu</span>
+                    <span class="text-xs text-surface-600">Commission par vente</span>
+                    <span class="text-2xl font-bold text-indigo-700">{{ articleCommissionPreview() | number: '1.3-3' }} DT</span>
+                    <span class="text-xs text-surface-500">
+                        ({{ (articleForm.get('sellingPrice')?.value || 0) | number: '1.3-3' }} DT × {{ articleForm.get('commissionPercent')?.value || 0 }}%)
+                    </span>
+                </div>
+            </div>
+
+            <!-- Help info bar -->
+            <div class="flex items-center gap-2 mt-3 px-3 py-2 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-xs">
+                <i class="pi pi-info-circle"></i>
+                <span>L'employé recevra {{ articleForm.get('commissionPercent')?.value || 0 }}% du prix de vente de cet article.</span>
             </div>
         </div>
 
@@ -205,6 +223,38 @@
                     <input id="emplacement" type="text" pInputText formControlName="emplacement" placeholder="Ex: Rayon A, Étagère 3" />
                 </div>
             </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="featured" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer">
+                        <input id="featured" type="checkbox" formControlName="featured" />
+                        Article vedette (apparaît dans l'accès rapide d'ordre-service)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🔹 Commission flow strip -->
+        <div class="flex flex-wrap items-center justify-between gap-2 mt-2 px-3 py-2 rounded-lg border border-surface-200 bg-surface-50 text-xs text-surface-600">
+            <div class="flex items-center gap-2">
+                <i class="pi pi-check-circle text-green-600"></i>
+                <span>Article vendu</span>
+            </div>
+            <i class="pi pi-arrow-right text-surface-400"></i>
+            <div class="flex items-center gap-2">
+                <i class="pi pi-percentage text-indigo-600"></i>
+                <span>Pourcentage appliqué</span>
+            </div>
+            <i class="pi pi-arrow-right text-surface-400"></i>
+            <div class="flex items-center gap-2">
+                <i class="pi pi-wallet text-amber-600"></i>
+                <span>Prime calculée</span>
+            </div>
+            <i class="pi pi-arrow-right text-surface-400"></i>
+            <div class="flex items-center gap-2">
+                <i class="pi pi-chart-bar text-blue-600"></i>
+                <span>Tableau de bord</span>
+            </div>
         </div>
     </form>
 
@@ -213,6 +263,135 @@
             <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (click)="hideDialog()" />
             <p-button [label]="getSaveButtonLabel()" [icon]="isEditMode ? 'pi pi-save' : 'pi pi-check'" severity="primary" (click)="saveArticle()" [disabled]="articleForm.invalid" />
         </div>
+    </ng-template>
+</p-dialog>
+
+<!-- ===== TRANSFER DIALOG ===== -->
+<p-dialog [(visible)]="transferDialog" [style]="{ width: '560px' }" header="Transférer vers magasin" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="transfer-dialog">
+
+    <!-- Article info card -->
+    <div *ngIf="transferArticle" class="flex items-center gap-3 p-3 mb-4 rounded-lg border border-surface-200 bg-surface-50">
+        <div class="flex items-center justify-center w-10 h-10 rounded-md bg-primary-100 text-primary-700">
+            <i class="pi pi-box text-lg"></i>
+        </div>
+        <div class="flex flex-col">
+            <span class="font-semibold text-surface-900">{{ transferArticle.name }}</span>
+            <span class="text-xs text-surface-500 font-mono">{{ transferArticle.reference || '—' }}</span>
+        </div>
+    </div>
+
+    <!-- Stock overview: Maison → Magasin -->
+    <div *ngIf="transferArticle" class="flex items-stretch gap-2 mb-4">
+        <div class="flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border border-green-200 bg-green-50">
+            <div class="flex items-center gap-2 text-green-700">
+                <i class="pi pi-home"></i>
+                <span class="text-xs font-medium uppercase tracking-wide">Stock Maison</span>
+            </div>
+            <span class="text-2xl font-bold text-green-800">{{ transferArticle.stockQuantity }}</span>
+        </div>
+
+        <div class="flex items-center justify-center px-1 text-surface-400">
+            <i class="pi pi-arrow-right text-xl"></i>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border border-blue-200 bg-blue-50">
+            <div class="flex items-center gap-2 text-blue-700">
+                <i class="pi pi-shopping-bag"></i>
+                <span class="text-xs font-medium uppercase tracking-wide">Stock Magasin</span>
+            </div>
+            <span class="text-2xl font-bold text-blue-800">{{ transferArticle.shopQuantity }}</span>
+        </div>
+    </div>
+
+    <!-- Quantity selector -->
+    <form [formGroup]="transferForm" (ngSubmit)="confirmTransfer()">
+        <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <label class="text-sm font-semibold text-surface-700">Quantité à transférer</label>
+                <span class="text-xs text-surface-500">Max : {{ transferArticle?.stockQuantity || 0 }}</span>
+            </div>
+
+            <p-inputNumber formControlName="quantity" [min]="1" [max]="transferArticle?.stockQuantity || 0" [showButtons]="true" buttonLayout="horizontal" spinnerMode="horizontal" decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary" inputStyleClass="text-center font-semibold" styleClass="w-full" />
+
+            <div class="flex flex-wrap gap-2 mt-2">
+                <p-button label="+1" severity="secondary" [outlined]="true" size="small" (onClick)="bumpTransfer(1)" />
+                <p-button label="+5" severity="secondary" [outlined]="true" size="small" (onClick)="bumpTransfer(5)" />
+                <p-button label="+10" severity="secondary" [outlined]="true" size="small" (onClick)="bumpTransfer(10)" />
+                <p-button label="Max" severity="secondary" [outlined]="true" size="small" (onClick)="bumpTransfer('max')" />
+            </div>
+
+            <small *ngIf="transferForm.get('quantity')?.hasError('max') && transferForm.get('quantity')?.touched" class="block mt-2 text-red-500">
+                Quantité dépasse le stock disponible
+            </small>
+            <small *ngIf="transferForm.get('quantity')?.hasError('min') && transferForm.get('quantity')?.touched" class="block mt-2 text-red-500">
+                La quantité doit être supérieure à 0
+            </small>
+        </div>
+
+        <!-- Preview -->
+        <div *ngIf="transferArticle && transferForm.get('quantity')?.valid" class="mb-2">
+            <h4 class="text-sm font-semibold text-surface-700 mb-2">Aperçu après transfert</h4>
+            <div class="flex items-stretch gap-2">
+                <div class="flex-1 flex flex-col gap-1 p-3 rounded-lg border border-green-200 bg-green-50">
+                    <span class="text-xs text-green-700 font-medium uppercase tracking-wide">Stock Maison</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-base text-surface-500 line-through">{{ transferArticle.stockQuantity }}</span>
+                        <i class="pi pi-arrow-right text-xs text-surface-400"></i>
+                        <span class="text-xl font-bold text-green-700">{{ previewNewStock() }}</span>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col gap-1 p-3 rounded-lg border border-blue-200 bg-blue-50">
+                    <span class="text-xs text-blue-700 font-medium uppercase tracking-wide">Stock Magasin</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-base text-surface-500 line-through">{{ transferArticle.shopQuantity }}</span>
+                        <i class="pi pi-arrow-right text-xs text-surface-400"></i>
+                        <span class="text-xl font-bold text-blue-700">{{ previewNewShop() }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <ng-template #footer>
+        <div class="flex justify-between gap-2 w-full">
+            <p-button label="Annuler" [text]="true" severity="secondary" (click)="closeTransferDialog()" />
+            <p-button label="Confirmer le transfert" icon="pi pi-check" severity="success" (click)="confirmTransfer()" [disabled]="transferForm.invalid || (transferLoading$ | async) || false" [loading]="(transferLoading$ | async) || false" />
+        </div>
+    </ng-template>
+</p-dialog>
+
+<!-- ===== HISTORY DIALOG ===== -->
+<p-dialog [(visible)]="historyDialog" [style]="{ width: '900px' }" header="Historique des transferts" [modal]="true" [closable]="true">
+    <p-table [value]="(transfers$ | async) || []" [rows]="10" [paginator]="true" [rowHover]="true" dataKey="_id" [tableStyle]="{ 'min-width': '50rem' }" [loading]="(transferLoading$ | async) || false">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Date</th>
+                <th>Article</th>
+                <th>Quantité</th>
+                <th>Maison (avant → après)</th>
+                <th>Magasin (avant → après)</th>
+                <th>Employé</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+            <tr>
+                <td>{{ row.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ formatArticleName(row.article) }}</td>
+                <td>{{ row.quantity }}</td>
+                <td>{{ row.oldStock }} → {{ row.newStock }}</td>
+                <td>{{ row.oldShop }} → {{ row.newShop }}</td>
+                <td>{{ formatEmployee(row.employee) }}</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6" class="text-center">Aucun transfert enregistré.</td>
+            </tr>
+        </ng-template>
+    </p-table>
+
+    <ng-template #footer>
+        <p-button label="Fermer" icon="pi pi-times" [text]="true" severity="secondary" (click)="closeHistoryDialog()" />
     </ng-template>
 </p-dialog>
 

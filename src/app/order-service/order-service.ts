@@ -1,8 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { TextareaModule } from 'primeng/textarea';
+import { displayEmployee, WorkOrder } from '../store/order-service-store/work-order.model';
+import * as OrderServiceSelectors from '../store/order-service-store/order.service.selectors';
 
 // PrimeNG Imports
 import { ButtonModule } from 'primeng/button';
@@ -28,7 +34,7 @@ import * as ArticleSelectors from '../store/article-store/article.selectors';
 import * as EmployeeActions from '../store/employee-store/emloyee.actions';
 import * as EmployeeSelectors from '../store/employee-store/employee.selectors';
 import * as OrderServiceActions from '../store/order-service-store/order.service.actions';
-import { selectUniqueCategories, selectUniqueTypes } from '../store/article-store/article.selectors';
+import { selectUniqueTypes } from '../store/article-store/article.selectors';
 
 @Component({
     selector: 'app-inventory-work',
@@ -51,7 +57,8 @@ import { selectUniqueCategories, selectUniqueTypes } from '../store/article-stor
         InputTextModule,
         ToastModule,
         ConfirmDialogModule,
-        TooltipModule
+        TooltipModule,
+        TextareaModule
     ],
     providers: [MessageService, ConfirmationService],
     templateUrl: './order-service.html',
@@ -61,46 +68,37 @@ export class OrderService implements OnInit {
     // LocalStorage key
     private readonly STORAGE_KEY = 'selectedArticles';
 
-    // Categories and types
-    categories = [
-        {
-            id: 'house',
-            name: 'Clé de Maison',
-            icon: 'pi pi-home',
-            types: ['UL50', 'UL51', 'CS206', 'Kale', 'DF1R', 'ISEO']
-        },
-        {
-            id: 'car',
-            name: 'Clé de Voiture',
-            icon: 'pi pi-car',
-            types: ['Auto', 'CarKey']
-        },
-        {
-            id: 'service',
-            name: 'Service',
-            icon: 'pi pi-cog',
-            types: ['Service', 'Copy']
-        }
-    ];
-
-    keyTypes = [
-        { code: 'UL50', label: 'UL50' },
-        { code: 'UL51', label: 'UL51' },
-        { code: 'CS206', label: 'CS206' },
-        { code: 'Kale', label: 'Kale' },
-        { code: 'DF1R', label: 'DF1R' },
-        { code: 'ISEO', label: 'ISEO' }
-    ];
-
     // State
-    selectedCategory: string = 'house';
-    selectedType: string = 'UL50';
-    searchTerm: string = '';
+    selectedType: string | null = null;
     isSaving: boolean = false;
 
     // Modal state
     visible: boolean = false;
     articleSelectedForModal: any = null;
+
+    // Service modal state (Phase C)
+    serviceModalVisible: boolean = false;
+    selectedServiceForm = new FormGroup({
+        title: new FormControl('', Validators.required),
+        description: new FormControl(''),
+        employee: new FormControl('', Validators.required),
+        duration: new FormControl(15, [Validators.required, Validators.min(1)]),
+        price: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
+        // Per-service commission %. Snapshotted onto the WorkOrder line at confirm.
+        commissionPercent: new FormControl<number | null>(0, [Validators.min(0)])
+    });
+
+    // Shop-of-the-day dialog state (Phase D)
+    shopDialogVisible: boolean = false;
+
+    // Template helper used by the shop-of-the-day table.
+    readonly displayEmployee = displayEmployee;
+
+    // Field initializer is an injection context, so inject() works here. We
+    // pass this to takeUntilDestroyed() in ngOnInit (which is NOT an injection
+    // context — calling takeUntilDestroyed() without a DestroyRef there throws
+    // NG0203 at runtime, silently breaking the subscription).
+    private readonly destroyRef = inject(DestroyRef);
 
     // ✅ FORMARRAY for selected articles (RIGHT PANEL)
     selectedArticlesFormArray = new FormArray<FormGroup>([]);
@@ -108,8 +106,7 @@ export class OrderService implements OnInit {
     // Form for modal (when adding article)
     selectedArticleForm = new FormGroup({
         quantity: new FormControl(1, [Validators.required, Validators.min(1)]),
-        employee: new FormControl('', Validators.required),
-        duration: new FormControl(0, Validators.min(1))
+        employee: new FormControl('', Validators.required)
     });
 
     // Employee list
@@ -125,23 +122,32 @@ export class OrderService implements OnInit {
 
     // Observables from store
     articles$: Observable<any[]>;
+    featuredForType$: Observable<any[]>;
     loading$: Observable<boolean>;
     error$: Observable<string | null>;
     employee$: Observable<any[]>;
-    categories$: Observable<any[]>;
     types$: Observable<any[]>;
+    todayOrders$: Observable<WorkOrder[]>;
+
+    private selectedTypeSubject = new BehaviorSubject<string | null>(null);
 
     constructor(
         private store: Store,
         private messageService: MessageService,
-        private confirmationService: ConfirmationService
+        private confirmationService: ConfirmationService,
+        private actions$: Actions
     ) {
         this.articles$ = this.store.select(ArticleSelectors.selectAllArticles);
         this.loading$ = this.store.select(ArticleSelectors.selectArticleLoading);
         this.error$ = this.store.select(ArticleSelectors.selectArticleError);
         this.employee$ = this.store.select(EmployeeSelectors.selectEmployeeDropdown);
-        this.categories$ = this.store.select(selectUniqueCategories);
         this.types$ = this.store.select(selectUniqueTypes);
+        this.todayOrders$ = this.store.select(OrderServiceSelectors.selectTodayOrders);
+
+        // Featured/quick-access banner: pinned articles, narrowed by selected
+        // type when one is active. The MAIN articles table stays untouched
+        // and always shows every article.
+        this.featuredForType$ = combineLatest([this.articles$, this.selectedTypeSubject]).pipe(map(([articles, type]) => articles.filter((a) => a?.featured && (!type || a?.type === type))));
     }
 
     ngOnInit(): void {
@@ -155,6 +161,22 @@ export class OrderService implements OnInit {
 
         // ✅ Subscribe to FormArray changes to auto-save to localStorage
         this.setupAutoSave();
+
+        // Cart lifecycle is bound to the bulk-save outcome:
+        //  - SUCCESS  → backend confirmed everything, stock decremented → clear cart
+        //  - FAILURE  → keep cart so the user can fix and retry (toast comes from the effect)
+        this.actions$
+            .pipe(ofType(OrderServiceActions.createMultipleOrderServicesSuccess), takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => {
+                this.selectedArticlesFormArray.clear();
+                this.clearLocalStorage();
+                this.calculateStats();
+                this.isSaving = false;
+            });
+
+        this.actions$.pipe(ofType(OrderServiceActions.createMultipleOrderServicesFailure), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.isSaving = false;
+        });
     }
 
     // ✅ Setup auto-save on FormArray value changes
@@ -210,12 +232,24 @@ export class OrderService implements OnInit {
 
     // ✅ Helper to create FormGroup for each article
     createArticleFormGroup(article: any): FormGroup {
+        // Article rows clamp quantity to current stock. Service rows skip the
+        // max validator — they have no stockQuantity concept.
+        const isService = (article.entryType || 'article') === 'service';
+        const quantityValidators = [Validators.required, Validators.min(1)];
+        if (!isService && Number.isFinite(Number(article.stockQuantity))) {
+            quantityValidators.push(Validators.max(Number(article.stockQuantity)));
+        }
+
         const formGroup = new FormGroup({
             id: new FormControl(article.id),
             name: new FormControl(article.name),
             reference: new FormControl(article.reference),
             type: new FormControl(article.type),
-            quantity: new FormControl(article.quantity || 1, [Validators.required, Validators.min(1)]),
+            // Single source of truth for article-vs-service distinction.
+            // Defaults to 'article' so localStorage entries written before this
+            // field existed still load correctly.
+            entryType: new FormControl(article.entryType || 'article'),
+            quantity: new FormControl(article.quantity || 1, quantityValidators),
             employee: new FormControl(article.employee || '', Validators.required),
             employeeName: new FormControl(article.employeeName || ''),
             duration: new FormControl(article.duration || 0, Validators.min(0)),
@@ -233,42 +267,16 @@ export class OrderService implements OnInit {
         return formGroup;
     }
 
-    // Format category name for UI
-    formatCategorty(category: string): string {
-        switch (category) {
-            case 'KeyHome':
-                return 'Clé de maison';
-            case 'KeyCar':
-                return 'Clé de voiture';
-            default:
-                return category;
-        }
-    }
-
     // ✅ Get FormGroup at specific index
     getArticleFormGroup(index: number): FormGroup {
         return this.selectedArticlesFormArray.at(index) as FormGroup;
     }
 
-    // Category and type selection
-    selectCategory(category: any): void {}
-
-    selectType(typeCode: string): void {
-        this.selectedType = typeCode;
+    // Type selection — null clears the filter and shows every article.
+    selectType(typeCode: string | null): void {
+        this.selectedType = this.selectedType === typeCode ? null : typeCode;
+        this.selectedTypeSubject.next(this.selectedType);
     }
-
-    get selectedCategoryName(): string {
-        return this.categories.find((c) => c.id === this.selectedCategory)?.name || '';
-    }
-
-    get availableTypes(): any[] {
-        const category = this.categories.find((c) => c.id === this.selectedCategory);
-        if (!category) return [];
-        return this.keyTypes.filter((type) => category.types.includes(type.code));
-    }
-
-    // Search
-    onSearchChange(): void {}
 
     // Open modal for new work
     openNewWork(): void {
@@ -279,15 +287,116 @@ export class OrderService implements OnInit {
         });
     }
 
+    // ===== Service modal (Phase C) =====
+    openServiceModal(): void {
+        this.selectedServiceForm.reset({
+            title: '',
+            description: '',
+            employee: '',
+            duration: 15,
+            price: null,
+            commissionPercent: 0
+        });
+        this.serviceModalVisible = true;
+    }
+
+    // Live commission preview for the Créer Service modal.
+    serviceCommissionPreview(): number {
+        const price = Number(this.selectedServiceForm.get('price')?.value ?? 0);
+        const percent = Number(this.selectedServiceForm.get('commissionPercent')?.value ?? 0);
+        return Math.round(((price * percent) / 100) * 1000) / 1000;
+    }
+
+    closeServiceModal(): void {
+        this.serviceModalVisible = false;
+    }
+
+    confirmServiceModal(): void {
+        Object.keys(this.selectedServiceForm.controls).forEach((key) => {
+            this.selectedServiceForm.get(key)?.markAsTouched();
+        });
+
+        if (this.selectedServiceForm.invalid) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validation',
+                detail: 'Veuillez remplir le titre, l\'employé, le temps et le prix.',
+                life: 3000
+            });
+            return;
+        }
+
+        const v = this.selectedServiceForm.value;
+        const formGroup = this.createServiceFormGroup({
+            title: v.title,
+            description: v.description,
+            employee: v.employee,
+            duration: v.duration,
+            price: v.price,
+            commissionPercent: v.commissionPercent
+        });
+        this.selectedArticlesFormArray.push(formGroup);
+
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Service ajouté',
+            detail: `"${v.title}" ajouté à la commande`,
+            life: 3000
+        });
+
+        this.closeServiceModal();
+        this.calculateStats();
+    }
+
+    // FormGroup matching the right-panel layout but tagged as a service.
+    // Service-specific fields (description, price) are kept here; the right
+    // panel only renders price/duration when entryType === 'service'.
+    createServiceFormGroup(service: any): FormGroup {
+        return new FormGroup({
+            id: new FormControl(null),
+            name: new FormControl(service.title || '', Validators.required),
+            reference: new FormControl(''),
+            type: new FormControl(''),
+            description: new FormControl(service.description || ''),
+            entryType: new FormControl('service'),
+            quantity: new FormControl(1, [Validators.required, Validators.min(1)]),
+            employee: new FormControl(service.employee || '', Validators.required),
+            employeeName: new FormControl(''),
+            duration: new FormControl(service.duration || 15, [Validators.required, Validators.min(0)]),
+            stockQuantity: new FormControl(null),
+            sellingPrice: new FormControl(0),
+            price: new FormControl(service.price ?? 0, [Validators.required, Validators.min(0)]),
+            commissionPercent: new FormControl(Number(service.commissionPercent ?? 0)),
+            timestamp: new FormControl(new Date())
+        });
+    }
+
+    // ===== Shop-of-the-day dialog (Phase D) =====
+    openShopDialog(): void {
+        // Refresh today's data each time the dialog opens; the selector filters by createdAt.
+        this.store.dispatch(OrderServiceActions.loadOrder());
+        this.shopDialogVisible = true;
+    }
+
+    closeShopDialog(): void {
+        this.shopDialogVisible = false;
+    }
+
     // ✅ Add article - open modal
     addArticle(article: any): void {
         this.articleSelectedForModal = article;
 
+        // Stock-aware validator: max changes per article. Re-applied each time
+        // the modal opens so the previous article's max doesn't leak.
+        const max = Number(article?.stockQuantity ?? 0);
+        const quantityCtrl = this.selectedArticleForm.get('quantity');
+        quantityCtrl?.setValidators([Validators.required, Validators.min(1), Validators.max(max)]);
+        quantityCtrl?.updateValueAndValidity({ emitEvent: false });
+
         // Reset modal form with default values
         this.selectedArticleForm.reset({
             quantity: 1,
-            employee: '',
-            duration: 0
+            employee: ''
         });
 
         this.visible = true;
@@ -299,8 +408,7 @@ export class OrderService implements OnInit {
         this.articleSelectedForModal = null;
         this.selectedArticleForm.reset({
             quantity: 1,
-            employee: '',
-            duration: 0
+            employee: ''
         });
     }
 
@@ -339,10 +447,11 @@ export class OrderService implements OnInit {
             name: this.articleSelectedForModal.name,
             reference: this.articleSelectedForModal.reference,
             type: this.articleSelectedForModal.type,
+            entryType: 'article' as const,
             quantity: formValues.quantity || 1,
             employee: formValues.employee || '', // ✅ CRITICAL: Employee ID
             employeeName: employee?.name || '', // ✅ CRITICAL: Employee Name
-            duration: formValues.duration || 0,
+            duration: 0,
             stockQuantity: this.articleSelectedForModal.stockQuantity,
             sellingPrice: this.articleSelectedForModal.sellingPrice,
             timestamp: new Date()
@@ -470,20 +579,27 @@ export class OrderService implements OnInit {
         // ✅ LOG 5: Check mapped data before saving
         const articlesToSave = this.selectedArticlesFormArray.controls.map((control) => {
             const value = control.value;
-            const employee = this.employeeList.find((e) => e.id === value.employee);
+            const isService = value.entryType === 'service';
 
             return {
-                // articleId: value.id,
                 name: value.name,
-                // articleReference: value.reference,
-                // articleType: value.type,
+                description: value.description || '',
                 quantity: value.quantity,
                 employee: value.employee,
-                // employeeName: employee?.name || value.employeeName,
-                duration: value.duration,
-                // stockQuantity: value.stockQuantity,
-                // sellingPrice: value.sellingPrice,
-                price: value.quantity * value.sellingPrice
+                duration: value.duration || 0,
+                // Service price is set directly in the modal; article price is
+                // unit selling-price × quantity.
+                price: isService ? Number(value.price ?? 0) : value.quantity * (value.sellingPrice ?? 0),
+                // entryType drives commission rate + revenue split server-side.
+                // Falls back to 'article' for legacy localStorage entries.
+                entryType: value.entryType || 'article',
+                // Article reference is sent only for article entries; service
+                // entries leave it null so the backend default applies.
+                article: isService ? null : value.id,
+                // Commission: services pass their per-line %, the backend snapshots
+                // articles from the parent Article doc. calculatedPrime is always
+                // recomputed server-side (don't trust the client for money).
+                commissionPercent: isService ? Number(value.commissionPercent ?? 0) : 0
             };
         });
 
@@ -501,30 +617,16 @@ export class OrderService implements OnInit {
             acceptButtonStyleClass: 'p-button-success',
             accept: () => {
                 this.isSaving = true;
-
-                // ✅ LOG 7: Before API call
                 console.log('🚀 Sending to API:', articlesToSave);
 
-                // Dispatch action to save to database
+                // Cart-clearing and toasts are handled by the success/failure
+                // action subscriptions in ngOnInit. On failure the cart is
+                // intentionally preserved so the user can adjust and retry.
                 this.store.dispatch(
                     OrderServiceActions.createMultipleOrderServices({
                         orderServices: articlesToSave
                     })
                 );
-
-                // ✅ Clear FormArray and localStorage after successful save
-                this.selectedArticlesFormArray.clear();
-                this.clearLocalStorage();
-                this.calculateStats();
-                this.isSaving = false;
-
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Enregistré avec succès',
-                    detail: `${articlesToSave.length} service(s) enregistré(s)`,
-                    icon: 'pi pi-check-circle',
-                    life: 5000
-                });
             }
         });
     }

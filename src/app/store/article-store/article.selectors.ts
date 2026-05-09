@@ -6,5 +6,4 @@ export const selectAllArticles = createSelector(selectArticleState, (state) => s
 export const selectSelectedArticle = createSelector(selectArticleState, (state) => state.selectedArticle);
 export const selectArticleLoading = createSelector(selectArticleState, (state) => state.loading);
 export const selectArticleError = createSelector(selectArticleState, (state) => state.error);
-export const selectUniqueCategories = createSelector(selectAllArticles, (articles) => [...new Set(articles.map((a) => a.category))]);
 export const selectUniqueTypes = createSelector(selectAllArticles, (articles) => [...new Set(articles.map((a) => a.type))]);

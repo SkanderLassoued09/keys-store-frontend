@@ -1,8 +1,9 @@
 import { createReducer, on } from '@ngrx/store';
 import * as OrderActions from './order.service.actions';
+import { WorkOrder } from './work-order.model';
 
 export interface OrderState {
-    orders: any[];
+    orders: WorkOrder[];
     loading: boolean;
     error: string | null;
 }
