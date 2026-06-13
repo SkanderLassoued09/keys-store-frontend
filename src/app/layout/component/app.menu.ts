@@ -67,8 +67,13 @@ export class AppMenu implements OnInit, OnDestroy {
                     label: 'Service',
                     items: [
                         { label: 'Order List', icon: 'pi pi-fw pi-home', routerLink: ['/pages/order-service-list'] },
-                        { label: 'Order Service', icon: 'pi pi-fw pi-home', routerLink: ['/order-service'] }
+                        { label: 'Order Service', icon: 'pi pi-fw pi-home', routerLink: ['/order-service'] },
+                        { label: 'Article Returns', icon: 'pi pi-fw pi-undo', routerLink: ['/pages/article-return'] }
                     ]
+                },
+                {
+                    label: 'Paramètres',
+                    items: [{ label: 'Commission service', icon: 'pi pi-fw pi-cog', routerLink: ['/pages/admin-settings'] }]
                 }
             ];
         } else {

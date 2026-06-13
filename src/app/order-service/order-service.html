@@ -64,13 +64,13 @@
             </div>
 
             <div class="table-wrapper">
-                <p-table #dt [value]="(articles$ | async) || []" [loading]="loading$ | async" responsiveLayout="scroll" [globalFilterFields]="['name', 'reference', 'type', 'stockQuantity', 'description']">
+                <p-table #dt [value]="(articles$ | async) || []" [loading]="loading$ | async" responsiveLayout="scroll" [globalFilterFields]="['name', 'reference', 'type', 'shopQuantity', 'description']">
                     <ng-template pTemplate="header">
                         <tr>
                             <th>Réf</th>
                             <th>Nom</th>
                             <th>Type</th>
-                            <th>Stock</th>
+                            <th>Stock Magasin</th>
                             <th>ACTION</th>
                         </tr>
                     </ng-template>
@@ -86,7 +86,7 @@
                                 <span class="tag blue">{{ article.type }}</span>
                             </td>
                             <td>
-                                <span class="tag" [class.green]="article.stockQuantity >= 20" [class.red]="article.stockQuantity < 20"> {{ article.stockQuantity }} </span>
+                                <span class="tag" [class.green]="(article.shopQuantity ?? 0) >= 20" [class.red]="(article.shopQuantity ?? 0) < 20"> {{ article.shopQuantity ?? 0 }} </span>
                             </td>
                             <td>
                                 <button class="btn-add" (click)="addArticle(article)">Ajouter</button>
@@ -113,7 +113,7 @@
             <div class="selected-header">
                 <h4>Articles Sélectionnés</h4>
                 <small>{{ selectedArticlesFormArray.length }} article(s) en attente</small>
-                <p-button label="Shop du jour" icon="pi pi-shopping-bag" severity="secondary" size="small" (onClick)="openShopDialog()" />
+                <p-button label="Today's Sales" icon="pi pi-shopping-bag" severity="secondary" size="small" (onClick)="openTodayIncomeDialog()" />
             </div>
 
             <div class="selected-list">
@@ -127,6 +127,7 @@
 
                     <strong>{{ articleFormGroup.get('name')?.value }}</strong>
                     <small>{{ articleFormGroup.get('reference')?.value }}</small>
+                    <small *ngIf="articleFormGroup.get('entryType')?.value === 'service' && articleFormGroup.get('category')?.value">Catégorie : {{ articleFormGroup.get('category')?.value }}</small>
 
                     <label>QUANTITÉ</label>
                     <p-inputNumber formControlName="quantity" [min]="1" [max]="articleFormGroup.get('stockQuantity')?.value || null" [showButtons]="true" />
@@ -139,6 +140,12 @@
 
                     <!-- ✅ Show selected employee name for verification -->
                     <small *ngIf="articleFormGroup.get('employeeName')?.value" style="color: #10b981; font-weight: 500"> ✓ {{ articleFormGroup.get('employeeName')?.value }} </small>
+
+                    <ng-container *ngIf="isCarKeySale(articleFormGroup)">
+                        <label>NOM CLIENT <span class="required">*</span></label>
+                        <input pInputText formControlName="customerName" placeholder="Nom du client" />
+                        <small *ngIf="articleFormGroup.get('customerName')?.invalid && articleFormGroup.get('customerName')?.touched" style="color: #ef4444"> Le nom du client est obligatoire </small>
+                    </ng-container>
 
                     <ng-container *ngIf="articleFormGroup.get('entryType')?.value === 'service'">
                         <label>TEMPS (min)</label>
@@ -182,9 +189,9 @@
             <div class="dialog-section">
                 <label class="dialog-label"> Quantité utilisée <span class="required">*</span> </label>
 
-                <p-inputNumber formControlName="quantity" [min]="1" [max]="articleSelectedForModal?.stockQuantity || 0" [showButtons]="true" buttonLayout="horizontal" spinnerMode="horizontal" inputStyleClass="quantity-input"> </p-inputNumber>
+                <p-inputNumber formControlName="quantity" [min]="1" [max]="articleSelectedForModal?.shopQuantity || 0" [showButtons]="true" buttonLayout="horizontal" spinnerMode="horizontal" inputStyleClass="quantity-input"> </p-inputNumber>
 
-                <small class="hint"> Stock disponible : {{ articleSelectedForModal?.stockQuantity }} </small>
+                <small class="hint"> Stock magasin disponible : {{ articleSelectedForModal?.shopQuantity }} </small>
                 <small *ngIf="selectedArticleForm.get('quantity')?.hasError('max') && selectedArticleForm.get('quantity')?.touched" style="color: #ef4444">
                     Quantité dépasse le stock disponible
                 </small>
@@ -198,6 +205,12 @@
 
                 <!-- ✅ Show validation error if employee not selected -->
                 <small *ngIf="selectedArticleForm.get('employee')?.invalid && selectedArticleForm.get('employee')?.touched" style="color: #ef4444"> L'employé est obligatoire </small>
+            </div>
+
+            <div class="dialog-section" *ngIf="isCarKeyArticle(articleSelectedForModal)">
+                <label class="dialog-label"> Nom client <span class="required">*</span> </label>
+                <input pInputText formControlName="customerName" placeholder="Nom du client" class="w-full" />
+                <small *ngIf="selectedArticleForm.get('customerName')?.invalid && selectedArticleForm.get('customerName')?.touched" style="color: #ef4444"> Le nom du client est obligatoire </small>
             </div>
 
         </form>
@@ -219,6 +232,12 @@
                 <label class="dialog-label"> Titre <span class="required">*</span> </label>
                 <input pInputText formControlName="title" placeholder="Ex: Réparation serrure" class="w-full" />
                 <small *ngIf="selectedServiceForm.get('title')?.invalid && selectedServiceForm.get('title')?.touched" style="color: #ef4444"> Le titre est obligatoire </small>
+            </div>
+
+            <div class="dialog-section">
+                <label class="dialog-label"> Catégorie <span class="required">*</span> </label>
+                <p-select formControlName="category" [options]="serviceCategoryOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner une catégorie" appendTo="body" class="w-full" />
+                <small *ngIf="selectedServiceForm.get('category')?.invalid && selectedServiceForm.get('category')?.touched" style="color: #ef4444"> La catégorie est obligatoire </small>
             </div>
 
             <div class="dialog-section">
@@ -251,21 +270,21 @@
                     </div>
                     <div class="flex flex-col">
                         <span class="font-semibold text-surface-900 text-sm">Prime employé (commission)</span>
-                        <span class="text-xs text-surface-500">Définissez le pourcentage de commission que l'employé recevra sur chaque service réalisé.</span>
+                        <span class="text-xs text-surface-500">Le pourcentage global défini par l'admin sera appliqué automatiquement.</span>
                     </div>
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-2 mt-2">
                     <div class="flex-1">
-                        <label class="text-xs font-semibold text-surface-700 block mb-1">Pourcentage (%)</label>
-                        <p-inputNumber formControlName="commissionPercent" [min]="0" [showButtons]="true" buttonLayout="horizontal" spinnerMode="horizontal" mode="decimal" [minFractionDigits]="0" [maxFractionDigits]="2" suffix=" %" inputStyleClass="text-center font-semibold" />
+                        <label class="text-xs font-semibold text-surface-700 block mb-1">Commission service</label>
+                        <span class="text-sm text-surface-600">Pourcentage global défini par l'admin</span>
                     </div>
                     <div class="flex-1 flex flex-col gap-1 p-2 rounded-lg border border-indigo-200 bg-white">
                         <span class="text-xs text-surface-500 uppercase tracking-wide">Aperçu</span>
-                        <span class="text-xs text-surface-600">Commission par service</span>
-                        <span class="text-xl font-bold text-indigo-700">{{ serviceCommissionPreview() | number: '1.3-3' }} DT</span>
+                        <span class="text-xs text-surface-600">Application automatique</span>
+                        <span class="text-xl font-bold text-indigo-700">Global</span>
                         <span class="text-xs text-surface-500">
-                            ({{ (selectedServiceForm.get('price')?.value || 0) | number: '1.3-3' }} DT × {{ selectedServiceForm.get('commissionPercent')?.value || 0 }}%)
+                            Le backend applique la commission globale au service.
                         </span>
                     </div>
                 </div>
@@ -280,7 +299,7 @@
                 <i class="pi pi-arrow-right text-surface-400"></i>
                 <div class="flex items-center gap-2">
                     <i class="pi pi-percentage text-indigo-600"></i>
-                    <span>Pourcentage appliqué</span>
+                    <span>Pourcentage global</span>
                 </div>
                 <i class="pi pi-arrow-right text-surface-400"></i>
                 <div class="flex items-center gap-2">
@@ -303,38 +322,42 @@
         </ng-template>
     </p-dialog>
 
-    <!-- ================= SHOP-OF-THE-DAY DIALOG ================= -->
-    <p-dialog [(visible)]="shopDialogVisible" [modal]="true" [closable]="true" [style]="{ width: '900px' }" header="Shop du jour — entrées confirmées">
+    <!-- ================= TODAY'S SALES DIALOG ================= -->
+    <p-dialog [(visible)]="todayIncomeDialogVisible" [modal]="true" [closable]="true" [style]="{ width: '900px' }" header="Today's Sales">
         <p-table [value]="(todayOrders$ | async) || []" [rows]="10" [paginator]="true" [rowHover]="true" dataKey="_id" [tableStyle]="{ 'min-width': '50rem' }">
             <ng-template pTemplate="header">
                 <tr>
+                    <th>Name</th>
                     <th>Type</th>
-                    <th>Nom</th>
-                    <th>Employé</th>
-                    <th>Quantité</th>
-                    <th>Heure</th>
+                    <th>Quantity</th>
+                    <th>Employee</th>
+                    <th>Time</th>
+                    <th>Prix</th>
                 </tr>
             </ng-template>
             <ng-template pTemplate="body" let-row>
                 <tr>
-                    <td>
-                        <p-tag [value]="row.entryType === 'service' ? 'Service' : 'Article'" [severity]="row.entryType === 'service' ? 'info' : 'success'" />
-                    </td>
                     <td>{{ row.name || '-' }}</td>
-                    <td>{{ displayEmployee(row.employee) }}</td>
+                    <td>{{ displayWorkOrderType(row) }}</td>
                     <td>{{ row.quantity || '-' }}</td>
+                    <td>{{ displayEmployee(row.employee) }}</td>
                     <td>{{ row.createdAt ? (row.createdAt | date: 'HH:mm') : '-' }}</td>
+                    <td>{{ row.price ? (row.price | currency: 'TND') : '-' }}</td>
                 </tr>
             </ng-template>
             <ng-template pTemplate="emptymessage">
                 <tr>
-                    <td colspan="5" class="text-center">Aucune entrée aujourd'hui.</td>
+                    <td colspan="6" class="text-center">No confirmed sales today.</td>
                 </tr>
             </ng-template>
         </p-table>
 
         <ng-template pTemplate="footer">
-            <p-button label="Fermer" icon="pi pi-times" severity="secondary" outlined (onClick)="closeShopDialog()" />
+            <div class="flex flex-col items-start mr-auto">
+                <span class="text-sm text-surface-500">Total Revenue</span>
+                <strong class="text-xl">{{ ((todayRevenue$ | async) || 0) | currency: 'TND' }}</strong>
+            </div>
+            <p-button label="Fermer" icon="pi pi-times" severity="secondary" outlined (onClick)="closeTodayIncomeDialog()" />
         </ng-template>
     </p-dialog>
 

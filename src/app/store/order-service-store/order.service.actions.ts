@@ -1,7 +1,12 @@
 import { createAction, props } from '@ngrx/store';
 
 // Load Orders
-export const loadOrder = createAction('[Order] Load Order');
+export interface OrderDateFilter {
+    from?: string;
+    to?: string;
+}
+
+export const loadOrder = createAction('[Order] Load Order', props<{ filter?: OrderDateFilter }>());
 export const loadOrderSuccess = createAction('[Order] Load Order Success', props<{ orders: any[] }>());
 export const loadOrderFailure = createAction('[Order] Load Order Failure', props<{ error: string }>());
 

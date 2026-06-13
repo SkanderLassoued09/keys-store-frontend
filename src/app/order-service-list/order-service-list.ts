@@ -15,15 +15,16 @@ import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { DialogModule } from 'primeng/dialog';
+import { DatePickerModule } from 'primeng/datepicker';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TagModule } from 'primeng/tag';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 import * as OrderActions from '../store/order-service-store/order.service.actions';
 import * as OrderSelectors from '../store/order-service-store/order.service.selectors';
 import * as ClientSelectors from '../store/client-store/client.selectors';
 import * as ClientActions from '../store/client-store/client.actions';
-import * as EmployeeSelectors from '../store/employee-store/employee.selectors';
 import { displayEmployee, refId, WorkOrder } from '../store/order-service-store/work-order.model';
 // import * as EmployeeActions from '../store/employee-store/employee.actions';
 // import * as MachineSelectors from '../store/machine-store/machine.selectors';
@@ -49,6 +50,7 @@ import { displayEmployee, refId, WorkOrder } from '../store/order-service-store/
         Button,
         ReactiveFormsModule,
         DialogModule,
+        DatePickerModule,
         InputNumberModule,
         TagModule
     ],
@@ -89,12 +91,16 @@ export class OrderList {
     client$: Observable<any[]> | undefined;
     employee$: Observable<any[]> | undefined;
     machine$: Observable<any[]> | undefined;
+    totalRevenue$: Observable<number>;
+    selectedDate: Date = new Date();
+    private selectedDateSubject = new BehaviorSubject<Date>(this.selectedDate);
 
     // Template helper — handles populated object OR raw ObjectId string.
     readonly displayEmployee = displayEmployee;
 
     constructor(private store: Store) {
-        this.order$ = this.store.select(OrderSelectors.selectAllOrders);
+        this.order$ = combineLatest([this.store.select(OrderSelectors.selectAllOrders), this.selectedDateSubject]).pipe(map(([orders, selectedDate]) => orders.filter((order) => OrderSelectors.isSameDay(order.createdAt, selectedDate))));
+        this.totalRevenue$ = this.order$.pipe(map((orders) => OrderSelectors.totalRevenue(orders)));
         this.loading$ = this.store.select(OrderSelectors.selectOrderLoading);
         this.error$ = this.store.select(OrderSelectors.selectOrderError);
         this.client$ = this.store.select(ClientSelectors.selectClientFromDropdown);
@@ -102,8 +108,15 @@ export class OrderList {
         // this.machine$ = this.store.select(MachineSelectors.selectMachineFromDropdown);
     }
 
+    onSelectedDateChange(date: Date | null): void {
+        if (!date) return;
+        this.selectedDate = date;
+        this.selectedDateSubject.next(date);
+        this.loadOrdersForSelectedDate();
+    }
+
     ngOnInit() {
-        this.store.dispatch(OrderActions.loadOrder());
+        this.loadOrdersForSelectedDate();
         this.store.dispatch(ClientActions.loadClient());
         // this.store.dispatch(EmployeeActions.loadEmployee());
         // this.store.dispatch(MachineActions.loadMachine());
@@ -205,14 +218,29 @@ export class OrderList {
     }
 
     // Get status severity for tag
-    getStatusSeverity(status: string): string {
+    getStatusSeverity(status: string | undefined): string {
         const option = this.statusOptions.find((s) => s.value === status);
         return option?.severity || 'info';
     }
 
+    private loadOrdersForSelectedDate(): void {
+        this.store.dispatch(OrderActions.loadOrder({ filter: this.dateFilter(this.selectedDate) }));
+    }
+
+    private dateFilter(date: Date): { from: string; to: string } {
+        const from = new Date(date);
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(date);
+        to.setHours(23, 59, 59, 999);
+        return {
+            from: from.toISOString(),
+            to: to.toISOString()
+        };
+    }
+
     // Get status label
-    getStatusLabel(status: string): string {
+    getStatusLabel(status: string | undefined): string {
         const option = this.statusOptions.find((s) => s.value === status);
-        return option?.label || status;
+        return option?.label || status || '-';
     }
 }

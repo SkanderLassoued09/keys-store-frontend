@@ -8,6 +8,8 @@ import { Provider } from '@/provider/provider';
 import { Client } from '@/client/client';
 import { OrderList } from '@/order-service-list/order-service-list';
 import { MachineList } from '@/machine/machine';
+import { AdminSettings } from '@/admin-settings/admin-settings';
+import { ArticleReturn } from '@/article-return/article-return';
 
 export default [
     { path: 'documentation', component: Documentation },
@@ -19,6 +21,8 @@ export default [
     { path: 'client', component: Client },
     { path: 'machine', component: MachineList },
     { path: 'order-service-list', component: OrderList },
+    { path: 'article-return', component: ArticleReturn },
+    { path: 'admin-settings', component: AdminSettings },
     { path: 'empty', component: Empty },
     { path: '**', redirectTo: '/notfound' }
 ] as Routes;

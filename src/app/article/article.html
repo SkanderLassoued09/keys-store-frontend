@@ -175,10 +175,10 @@
                 <!-- Live preview card -->
                 <div class="flex-1 flex flex-col gap-1 p-3 rounded-lg border border-indigo-200 bg-white">
                     <span class="text-xs text-surface-500 uppercase tracking-wide">Aperçu</span>
-                    <span class="text-xs text-surface-600">Commission par vente</span>
+                    <span class="text-xs text-surface-600">Commission par vente sur bénéfice</span>
                     <span class="text-2xl font-bold text-indigo-700">{{ articleCommissionPreview() | number: '1.3-3' }} DT</span>
                     <span class="text-xs text-surface-500">
-                        ({{ (articleForm.get('sellingPrice')?.value || 0) | number: '1.3-3' }} DT × {{ articleForm.get('commissionPercent')?.value || 0 }}%)
+                        (({{ (articleForm.get('sellingPrice')?.value || 0) | number: '1.3-3' }} DT - {{ (articleForm.get('purchasePrice')?.value || 0) | number: '1.3-3' }} DT) × {{ articleForm.get('commissionPercent')?.value || 0 }}%)
                     </span>
                 </div>
             </div>
@@ -186,7 +186,7 @@
             <!-- Help info bar -->
             <div class="flex items-center gap-2 mt-3 px-3 py-2 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-xs">
                 <i class="pi pi-info-circle"></i>
-                <span>L'employé recevra {{ articleForm.get('commissionPercent')?.value || 0 }}% du prix de vente de cet article.</span>
+                <span>L'employé recevra {{ articleForm.get('commissionPercent')?.value || 0 }}% du bénéfice de cet article.</span>
             </div>
         </div>
 

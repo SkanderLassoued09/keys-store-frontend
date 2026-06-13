@@ -16,6 +16,8 @@ import * as ProviderEffects from '../src/app/store/provider-store/provider.effec
 import * as EmployeeEffects from '../src/app/store/employee-store/employee.effects';
 import * as OrderServiceEffects from '../src/app/store/order-service-store/order.service.effects';
 import * as StockTransferEffects from '../src/app/store/stock-transfer-store/stock-transfer.effects';
+import * as SettingsEffects from '../src/app/store/settings-store/settings.effects';
+import * as ArticleReturnEffects from '../src/app/store/article-return-store/article-return.effects';
 import { clientReducer } from '@/store/client-store/client.reducer';
 import { employeeReducer } from '@/store/employee-store/employee.reducer';
 import { providerReducer } from '@/store/provider-store/provider.reducer';
@@ -23,6 +25,8 @@ import { MessageService } from 'primeng/api';
 import { orderReducer } from '@/store/order-service-store/order.service.reducer';
 import { machineReducer } from '@/store/machine-store/machine.reducer';
 import { stockTransferReducer } from '@/store/stock-transfer-store/stock-transfer.reducer';
+import { settingsReducer } from '@/store/settings-store/settings.reducer';
+import { articleReturnReducer } from '@/store/article-return-store/article-return.reducer';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -31,8 +35,8 @@ export const appConfig: ApplicationConfig = {
         provideAnimationsAsync(),
         MessageService,
         providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
-        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer, stockTransfer: stockTransferReducer }),
-        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects, StockTransferEffects),
+        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer, stockTransfer: stockTransferReducer, settings: settingsReducer, articleReturn: articleReturnReducer }),
+        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects, StockTransferEffects, SettingsEffects, ArticleReturnEffects),
         provideStoreDevtools({ maxAge: 25 })
     ]
 };

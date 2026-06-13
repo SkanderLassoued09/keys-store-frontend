@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_CONFIG } from 'src/api.config';
 
@@ -10,8 +10,15 @@ export class OrderService {
     private readonly baseUrl = `${API_CONFIG.baseUrl}/work-order`;
     constructor(private http: HttpClient) {}
 
-    getAll(): Observable<any[]> {
-        return this.http.get<any[]>(this.baseUrl);
+    getAll(filter?: { from?: string; to?: string }): Observable<any[]> {
+        let params = new HttpParams();
+        if (filter?.from) {
+            params = params.set('from', filter.from);
+        }
+        if (filter?.to) {
+            params = params.set('to', filter.to);
+        }
+        return this.http.get<any[]>(this.baseUrl, { params });
     }
 
     getById(id: string): Observable<any> {

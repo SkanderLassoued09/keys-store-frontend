@@ -102,7 +102,7 @@ export class Article {
     // (driven by selectUniqueTypes) shows real business labels.
     articleTypes = [
         { value: 'Clé maison', label: 'Clé maison', icon: 'pi pi-home' },
-        { value: 'Clé voiture', label: 'Clé voiture', icon: 'pi pi-car' },
+        { value: 'Clé de voiture', label: 'Clé de voiture', icon: 'pi pi-car' },
         { value: 'Télécommande', label: 'Télécommande', icon: 'pi pi-wifi' },
         { value: 'Tampon', label: 'Tampon', icon: 'pi pi-bookmark' },
         { value: 'Porte-clés', label: 'Porte-clés', icon: 'pi pi-link' },
@@ -364,9 +364,11 @@ export class Article {
 
     // Live commission preview (DT). Used by the article modal preview card.
     articleCommissionPreview(): number {
-        const price = Number(this.articleForm.get('sellingPrice')?.value ?? 0);
+        const purchase = Number(this.articleForm.get('purchasePrice')?.value ?? 0);
+        const selling = Number(this.articleForm.get('sellingPrice')?.value ?? 0);
         const percent = Number(this.articleForm.get('commissionPercent')?.value ?? 0);
-        return Math.round(((price * percent) / 100) * 1000) / 1000;
+        const profit = selling - purchase;
+        return Math.round(((profit * percent) / 100) * 1000) / 1000;
     }
 
     // Get margin CSS class

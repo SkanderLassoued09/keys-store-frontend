@@ -10,11 +10,11 @@ export const selectOrderById = (id: string) => createSelector(selectAllOrders, (
 
 // Revenue helpers — single source of truth for the daily-money calculation.
 // Each WorkOrder row already contains the line-item price, so revenue is a
-// pure sum. entryType drives the article/service split (legacy rows default
-// to 'article' via the schema default).
-const lineTotal = (o: WorkOrder): number => Number(o.price ?? 0);
+// pure sum. Return WorkOrder rows carry negative prices, so totals naturally
+// include refunded/replaced adjustments without a separate calculation path.
+export const lineTotal = (o: WorkOrder): number => Number(o.price ?? 0);
 
-const isSameDay = (iso: string | undefined, ref: Date): boolean => {
+export const isSameDay = (iso: string | undefined, ref: Date): boolean => {
     if (!iso) return false;
     const d = new Date(iso);
     return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
@@ -25,7 +25,17 @@ export const selectTodayOrders = createSelector(selectAllOrders, (orders) => {
     return orders.filter((o) => isSameDay(o.createdAt, today));
 });
 
-export const selectTodayRevenue = createSelector(selectTodayOrders, (orders) => orders.reduce((sum, o) => sum + lineTotal(o), 0));
+export const confirmedSales = (orders: WorkOrder[]): WorkOrder[] => orders;
+
+export const totalRevenue = (orders: WorkOrder[]): number => orders.reduce((sum, o) => sum + lineTotal(o), 0);
+
+export const selectTodayArticleOrders = createSelector(selectTodayOrders, (orders) => orders.filter((o) => (o.entryType ?? 'article') === 'article'));
+
+export const selectTodayConfirmedOrders = createSelector(selectTodayOrders, (orders) => confirmedSales(orders));
+
+export const selectTodayConfirmedRevenue = createSelector(selectTodayConfirmedOrders, (orders) => totalRevenue(orders));
+
+export const selectTodayRevenue = createSelector(selectTodayOrders, (orders) => totalRevenue(orders));
 
 export const selectTodayArticleRevenue = createSelector(selectTodayOrders, (orders) => orders.filter((o) => (o.entryType ?? 'article') === 'article').reduce((sum, o) => sum + lineTotal(o), 0));
 

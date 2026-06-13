@@ -8,6 +8,18 @@
     </ng-template>
 </p-toolbar>
 
+<div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
+    <div class="flex flex-col gap-2">
+        <label for="salesDate" class="font-semibold">Date des ventes</label>
+        <p-datepicker id="salesDate" [ngModel]="selectedDate" (ngModelChange)="onSelectedDateChange($event)" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" appendTo="body" />
+    </div>
+
+    <div class="flex flex-col items-start md:items-end gap-1">
+        <span class="text-sm text-surface-500">Total Revenue</span>
+        <strong class="text-2xl">{{ ((totalRevenue$ | async) || 0) | currency: 'TND' }}</strong>
+    </div>
+</div>
+
 <p-table
     #dt
     [value]="(order$ | async) || []"
@@ -17,7 +29,7 @@
     [rowHover]="true"
     dataKey="_id"
     [tableStyle]="{ 'min-width': '75rem' }"
-    [globalFilterFields]="['name', 'status', 'employee.firstName', 'employee.lastName', 'client.name']"
+    [globalFilterFields]="['name', 'category', 'customerName', 'employee.firstName', 'employee.lastName', 'client.name']"
     currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
     [showCurrentPageReport]="true"
 >
@@ -32,6 +44,8 @@
         <tr>
             <!-- <th style="width: 3rem"><p-tableHeaderCheckbox /></th> -->
             <th>Nom</th>
+            <th>Catégorie</th>
+            <th>Client</th>
             <th>Quantité</th>
             <th>Employé</th>
             <th>Durée</th>
@@ -46,15 +60,15 @@
         <tr>
             <!-- <td><p-tableCheckbox [value]="item" /></td> -->
             <td>{{ item.name || '-' }}</td>
+            <td>{{ item.category || '-' }}</td>
+            <td>{{ item.customerName || '-' }}</td>
             <td>{{ item.quantity || '-' }}</td>
             <td>{{ displayEmployee(item.employee) }}</td>
             <td>{{ item.duration|| '-' }}</td>
             <td>{{ item.price ? (item.price | currency: 'TND') : '-' }}</td>
+            <td><p-tag [value]="getStatusLabel(item.status)" [severity]="getStatusSeverity(item.status)" /></td>
+            
             <td>
-                <p-tag [value]="getStatusLabel(item.status)" [severity]="getStatusSeverity(item.status)" />
-            </td>
-            <td>
-                <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" (click)="editOrder(item)" pTooltip="Modifier" />
                 <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteOrder(item)" pTooltip="Supprimer" />
             </td>
         </tr>
@@ -137,17 +151,7 @@
             </div>
         </div>
 
-        <!-- Status Section -->
-        <div class="form-section">
-            <label class="section-label">Statut</label>
-
-            <div class="form-row">
-                <div class="form-field">
-                    <label for="status">Statut <span class="required">*</span></label>
-                    <p-select id="status" formControlName="status" [options]="statusOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un statut" />
-                </div>
-            </div>
-        </div>
+        
     </form>
 
     <ng-template #footer>

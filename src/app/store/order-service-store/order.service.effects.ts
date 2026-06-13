@@ -16,8 +16,8 @@ export const loadOrders$ = createEffect(
     (actions$ = inject(Actions), orderService = inject(OrderService)) => {
         return actions$.pipe(
             ofType(OrderActions.loadOrder),
-            mergeMap(() =>
-                orderService.getAll().pipe(
+            mergeMap(({ filter }) =>
+                orderService.getAll(filter).pipe(
                     map((orders) => OrderActions.loadOrderSuccess({ orders })),
                     catchError((error) =>
                         of(
