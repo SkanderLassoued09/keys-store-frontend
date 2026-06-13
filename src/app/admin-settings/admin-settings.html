@@ -1,0 +1,41 @@
+<div class="settings-page">
+    <div class="settings-card">
+        <div class="settings-header">
+            <div>
+                <h2>Paramètres admin</h2>
+                <p>Commission globale appliquée automatiquement à tous les services.</p>
+            </div>
+        </div>
+
+        <form [formGroup]="settingsForm" class="settings-form" (ngSubmit)="saveSettings()">
+            <div class="form-field">
+                <label for="serviceCommissionPercent">Commission service globale (%) <span class="required">*</span></label>
+                <p-inputNumber
+                    id="serviceCommissionPercent"
+                    formControlName="serviceCommissionPercent"
+                    [min]="0"
+                    [showButtons]="true"
+                    buttonLayout="horizontal"
+                    spinnerMode="horizontal"
+                    mode="decimal"
+                    [minFractionDigits]="0"
+                    [maxFractionDigits]="2"
+                    suffix=" %"
+                    styleClass="w-full"
+                    inputStyleClass="text-center font-semibold"
+                />
+                <small class="error-message" *ngIf="settingsForm.get('serviceCommissionPercent')?.invalid && settingsForm.get('serviceCommissionPercent')?.touched"> La commission globale est obligatoire </small>
+            </div>
+
+            <div class="settings-preview">
+                <span>Ce pourcentage sera utilisé par le backend pour calculer la prime de chaque service.</span>
+            </div>
+
+            <div class="actions">
+                <p-button label="Enregistrer" icon="pi pi-save" severity="primary" type="submit" [loading]="(saving$ | async) || false" [disabled]="settingsForm.invalid || ((loading$ | async) || false)" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<p-toast />

@@ -1,0 +1,65 @@
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'employeeList' does not exist on type 'OrderService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/order-service/order-service.html:169:87:
+[37m      169 │ ...="(employee$ | async) || [32memployeeList[37m || []" optionLabel="name...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component OrderService.
+
+    src/app/order-service/order-service.ts:58:17:
+[37m      58 │     templateUrl: [32m'./order-service.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'employeeList' does not exist on type 'OrderService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/order-service/order-service.html:169:87:
+[37m      169 │ ...="(employee$ | async) || [32memployeeList[37m || []" optionLabel="name...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component OrderService.
+
+    src/app/order-service/order-service.ts:58:17:
+[37m      58 │     templateUrl: [32m'./order-service.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'employeeList' does not exist on type 'OrderService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/order-service/order-service.html:169:87:
+[37m      169 │ ...="(employee$ | async) || [32memployeeList[37m || []" optionLabel="name...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component OrderService.
+
+    src/app/order-service/order-service.ts:58:17:
+[37m      58 │     templateUrl: [32m'./order-service.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'employeeList' does not exist on type 'OrderService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/order-service/order-service.html:169:87:
+[37m      169 │ ...="(employee$ | async) || [32memployeeList[37m || []" optionLabel="name...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component OrderService.
+
+    src/app/order-service/order-service.ts:58:17:
+[37m      58 │     templateUrl: [32m'./order-service.html'[37m,
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'selectTodayOrders' does not exist on type 'typeof import("C:/Users/nazih/Desktop/locksmith/keys-store-frontend/src/app/store/order-service-store/order.service.selectors")'. Did you mean 'selectAllOrders'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/order-service/order-service.ts:145:68:
+[37m      145 │ ...rs$ = this.store.select(OrderServiceSelectors.[32mselectTodayOrders[37m);
+          ╵                                                  [32m~~~~~~~~~~~~~~~~~[0m
+
+  'selectAllOrders' is declared here.
+
+    src/app/store/order-service-store/order.service.selectors.ts:5:13:
+[37m      5 │ export const [32mselectAllOrders[37m = createSelector(selectOrderState, (st...
+        ╵              [32m~~~~~~~~~~~~~~~[0m
+
+[39m[22m

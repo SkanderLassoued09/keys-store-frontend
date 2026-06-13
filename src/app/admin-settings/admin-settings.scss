@@ -1,0 +1,51 @@
+.settings-page {
+    padding: 1rem;
+}
+
+.settings-card {
+    max-width: 680px;
+    padding: 1.5rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    background: var(--surface-card);
+}
+
+.settings-header h2 {
+    margin: 0 0 0.35rem;
+}
+
+.settings-header p {
+    margin: 0;
+    color: var(--text-color-secondary);
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.required,
+.error-message {
+    color: #ef4444;
+}
+
+.settings-preview {
+    padding: 0.75rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    color: var(--text-color-secondary);
+    background: var(--surface-ground);
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+}
