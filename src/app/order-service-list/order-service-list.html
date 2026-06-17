@@ -1,6 +1,9 @@
+<h2 class="mb-4">Inventory Interface</h2>
+
 <p-toolbar class="mb-6">
     <ng-template #start>
         <p-button label="Nouvel ordre de travail" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
+        <p-button label="Commission employé" icon="pi pi-percentage" severity="secondary" outlined (onClick)="openCommissionDialog()" />
     </ng-template>
 
     <ng-template #end>
@@ -8,15 +11,37 @@
     </ng-template>
 </p-toolbar>
 
-<div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
-    <div class="flex flex-col gap-2">
-        <label for="salesDate" class="font-semibold">Date des ventes</label>
-        <p-datepicker id="salesDate" [ngModel]="selectedDate" (ngModelChange)="onSelectedDateChange($event)" dateFormat="dd/mm/yy" [showIcon]="true" [showButtonBar]="true" appendTo="body" />
+<!-- Date filters: quick presets + custom range -->
+<div class="flex flex-col md:flex-row md:items-end gap-3 mb-4">
+    <div class="flex flex-wrap gap-2">
+        <p-button label="Aujourd'hui" size="small" [outlined]="activeQuickFilter !== 'today'" (onClick)="quickFilter('today')" />
+        <p-button label="Hier" size="small" [outlined]="activeQuickFilter !== 'yesterday'" (onClick)="quickFilter('yesterday')" />
+        <p-button label="Cette semaine" size="small" [outlined]="activeQuickFilter !== 'week'" (onClick)="quickFilter('week')" />
+        <p-button label="Ce mois" size="small" [outlined]="activeQuickFilter !== 'month'" (onClick)="quickFilter('month')" />
     </div>
+    <div class="flex flex-col gap-1">
+        <label for="salesRange" class="text-sm font-semibold">Période personnalisée</label>
+        <p-datepicker id="salesRange" [(ngModel)]="dateRange" (ngModelChange)="onRangeChange($event)" selectionMode="range" [readonlyInput]="true" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" />
+    </div>
+</div>
 
-    <div class="flex flex-col items-start md:items-end gap-1">
-        <span class="text-sm text-surface-500">Total Revenue</span>
-        <strong class="text-2xl">{{ ((totalRevenue$ | async) || 0) | currency: 'TND' }}</strong>
+<!-- Revenue cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div class="rev-card">
+        <span class="rev-label"><i class="pi pi-wallet"></i> Chiffre d'affaires</span>
+        <strong class="rev-value">{{ ((totalRevenue$ | async) || 0) | currency: 'TND' }}</strong>
+    </div>
+    <div class="rev-card">
+        <span class="rev-label"><i class="pi pi-shopping-cart"></i> Nombre de ventes</span>
+        <strong class="rev-value">{{ (salesCount$ | async) || 0 }}</strong>
+    </div>
+    <div class="rev-card">
+        <span class="rev-label"><i class="pi pi-undo"></i> Nombre de retours</span>
+        <strong class="rev-value">{{ (returnsCount$ | async) || 0 }}</strong>
+    </div>
+    <div class="rev-card">
+        <span class="rev-label"><i class="pi pi-chart-line"></i> Panier moyen</span>
+        <strong class="rev-value">{{ ((averageTicket$ | async) || 0) | currency: 'TND' }}</strong>
     </div>
 </div>
 
@@ -159,6 +184,22 @@
             <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (click)="hideDialog()" />
             <p-button [label]="getSaveButtonLabel()" [icon]="isEditMode ? 'pi pi-save' : 'pi pi-check'" severity="primary" (click)="saveOrder()" [disabled]="orderForm.invalid" />
         </div>
+    </ng-template>
+</p-dialog>
+
+<!-- COMMISSION MODAL (global service commission %) -->
+<p-dialog [(visible)]="commissionDialog" [style]="{ width: '460px' }" header="Commission employé" [modal]="true" [closable]="true">
+    <form [formGroup]="commissionForm" class="flex flex-col gap-3" (ngSubmit)="saveCommission()">
+        <p class="text-sm text-surface-500 m-0">Pourcentage de commission appliqué aux services réalisés par les employés (ex: 10% d'un service de 100 DT = 10 DT pour l'employé).</p>
+        <div class="flex flex-col gap-1">
+            <label for="commission">Commission service (%) <span class="text-red-500">*</span></label>
+            <p-inputNumber inputId="commission" formControlName="serviceCommissionPercent" [min]="0" [showButtons]="true" suffix=" %" [minFractionDigits]="0" [maxFractionDigits]="2" />
+            <small class="text-red-500" *ngIf="commissionForm.get('serviceCommissionPercent')?.invalid && commissionForm.get('serviceCommissionPercent')?.touched">Un pourcentage valide est requis.</small>
+        </div>
+    </form>
+    <ng-template #footer>
+        <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="closeCommissionDialog()" />
+        <p-button label="Enregistrer" icon="pi pi-check" (onClick)="saveCommission()" [disabled]="commissionForm.invalid || (commissionSaving$ | async) || false" [loading]="(commissionSaving$ | async) || false" />
     </ng-template>
 </p-dialog>
 

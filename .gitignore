@@ -38,6 +38,12 @@ testem.log
 /typings
 .vscode
 
+# Logs (dev-server / local run output — never commit)
+*.log
+
 # System files
 .DS_Store
 Thumbs.db
+
+# Stale root-owned cache/build dirs left over from Docker builds
+*_root_old/

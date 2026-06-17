@@ -8,64 +8,37 @@
     </ng-template>
 </p-toolbar>
 
-<p-table
-    #dt
-    [value]="(machine$ | async) || []"
-    [loading]="(loading$ | async) || false"
-    [rows]="10"
-    [paginator]="true"
-    [rowHover]="true"
-    dataKey="_id"
-    [tableStyle]="{ 'min-width': '75rem' }"
-    [globalFilterFields]="['name', 'type', 'serialNumber', 'fournisseur.name', 'status']"
-    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
-    [showCurrentPageReport]="true"
->
-    <ng-template pTemplate="caption">
-        <div class="flex justify-end">
-            <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Rechercher..." />
-        </div>
-    </ng-template>
+<!-- Search -->
+<div class="flex justify-end mb-4">
+    <input pInputText type="text" [ngModel]="machineSearch" (ngModelChange)="onSearch($event)" placeholder="Rechercher..." />
+</div>
 
-    <!-- TABLE HEADER -->
-    <ng-template pTemplate="header">
-        <tr>
-            <th style="width: 3rem"><p-tableHeaderCheckbox /></th>
-            <th>Nom</th>
-            <th>Type</th>
-            <th>N° de série</th>
-            <th>Fournisseur</th>
-            <th>Date d'achat</th>
-            <th>Statut</th>
-            <th style="min-width: 10rem">Actions</th>
-        </tr>
-    </ng-template>
-
-    <!-- TABLE BODY -->
-    <ng-template pTemplate="body" let-item>
-        <tr>
-            <td><p-tableCheckbox [value]="item" /></td>
-            <td>{{ item.name || '-' }}</td>
-            <td>{{ item.type || '-' }}</td>
-            <td>{{ item.serialNumber || '-' }}</td>
-            <td>{{ item.fournisseur?.name || '-' }}</td>
-            <td>{{ item.purchaseDate ? (item.purchaseDate | date: 'dd/MM/yyyy') : '-' }}</td>
-            <td>
+<!-- Visual machine gallery -->
+<div class="machine-grid" *ngIf="!(loading$ | async); else loadingTpl">
+    <div class="machine-card" *ngFor="let item of (filteredMachines$ | async) || []" (click)="editMachine(item)">
+        <img [src]="item.image || fallbackImage" (error)="onImgError($event)" loading="lazy" alt="{{ item.name }}" class="machine-card-img" />
+        <div class="machine-card-body">
+            <div class="flex items-center justify-between gap-2">
+                <strong class="machine-card-name">{{ item.name || '-' }}</strong>
                 <p-tag [value]="getStatusLabel(item.status)" [severity]="getStatusSeverity(item.status)" />
-            </td>
-            <td>
+            </div>
+            <small class="machine-card-meta" *ngIf="item.type">{{ item.type }}</small>
+            <small class="machine-card-meta" *ngIf="item.serialNumber">N° {{ item.serialNumber }}</small>
+            <div class="machine-card-actions" (click)="$event.stopPropagation()">
                 <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" (click)="editMachine(item)" pTooltip="Modifier" />
-                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Supprimer" (click)="deleteMachine(item)" />
-            </td>
-        </tr>
-    </ng-template>
-    <!-- EMPTY MESSAGE -->
-    <ng-template pTemplate="emptymessage">
-        <tr>
-            <td colspan="6" class="text-center">Aucun machine trouvé.</td>
-        </tr>
-    </ng-template>
-</p-table>
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteMachine(item)" pTooltip="Supprimer" />
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="!((filteredMachines$ | async)?.length)" class="machine-empty">
+        <i class="pi pi-inbox"></i>
+        <p>Aucune machine trouvée.</p>
+    </div>
+</div>
+<ng-template #loadingTpl>
+    <div class="machine-empty"><i class="pi pi-spin pi-spinner"></i></div>
+</ng-template>
 
 <!-- MACHINE DIALOG -->
 <p-dialog [(visible)]="machineDialog" [style]="{ width: '700px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" styleClass="machine-dialog">
@@ -79,6 +52,25 @@
                     <label for="name">Nom <span class="required">*</span></label>
                     <input id="name" type="text" pInputText formControlName="name" placeholder="Nom de la machine" />
                     <small class="error-message" *ngIf="submitted && machineForm.get('name')?.invalid"> Le nom est obligatoire </small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label>Image</label>
+                    <div class="flex items-center gap-3">
+                        <img [src]="machineForm.value.image || fallbackImage" (error)="onImgError($event)" alt="aperçu" class="machine-thumb" />
+                        <div class="flex flex-col gap-2 flex-1">
+                            <input pInputText formControlName="image" placeholder="URL de l'image (https://...)" />
+                            <div class="flex items-center gap-2">
+                                <label class="machine-upload-btn">
+                                    <i class="pi pi-upload"></i> Téléverser
+                                    <input type="file" accept="image/*" (change)="onImageSelected($event)" hidden />
+                                </label>
+                                <p-button label="Retirer" icon="pi pi-times" severity="secondary" [text]="true" size="small" (onClick)="clearImage()" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

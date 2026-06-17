@@ -87,7 +87,7 @@ export class ArticleReturn implements OnInit {
         this.store.dispatch(ArticleReturnActions.loadArticleReturns());
         this.store.dispatch(ArticleActions.loadArticle());
         this.store.dispatch(EmployeeActions.loadEmployee());
-        this.store.dispatch(OrderActions.loadOrder());
+        this.store.dispatch(OrderActions.loadOrder({}));
 
         this.actions$.pipe(ofType(ArticleReturnActions.createArticleReturnSuccess), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.dialogVisible = false;
@@ -180,7 +180,9 @@ export class ArticleReturn implements OnInit {
         const replacementQuantity = this.returnForm.get('replacementQuantity');
         const refundedAmount = this.returnForm.get('refundedAmount');
 
-        repairAction?.setValidators(type === 'REPAIRED' ? [Validators.required] : []);
+        // Repair Action input was removed from the modal UI (kept as a backend
+        // field). No longer required, so REPAIRED returns submit without it.
+        repairAction?.setValidators([]);
         replacementArticle?.setValidators(type === 'REPLACED' ? [Validators.required] : []);
         replacementQuantity?.setValidators(type === 'REPLACED' ? [Validators.required, Validators.min(1)] : []);
         refundedAmount?.setValidators(type === 'REFUNDED' ? [Validators.required, Validators.min(0)] : []);

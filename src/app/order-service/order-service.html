@@ -1,11 +1,10 @@
 <!-- ================= HEADER ================= -->
 <div class="page-header">
-    <h2>Gestion des Travaux</h2>
+    <h2>Shop Interface</h2>
 
-    <!-- <div class="header-actions">
-        <p-button label="Nouveau Travail" icon="pi pi-plus" severity="success" (onClick)="openNewWork()" />
-        <p-button label="Statistiques" icon="pi pi-chart-bar" outlined />
-    </div> -->
+    <div class="header-actions flex flex-wrap items-center gap-2 sm:gap-3">
+        <p-button label="Nouveau Retour" icon="pi pi-undo" severity="warn" (onClick)="openReturnDialog()" />
+    </div>
 </div>
 
 <!-- ================= MAIN LAYOUT ================= -->
@@ -15,26 +14,17 @@
         <p-card>
             <p-button label="Créer Service" icon="pi pi-cog" severity="success" styleClass="w-full mb-3" (onClick)="openServiceModal()" />
 
-            <h4 class="panel-title">Types</h4>
+            <h4 class="panel-title">Catégories</h4>
 
-            <div class="type-list">
-                <button *ngFor="let type of (types$ | async) || []" class="type" [class.active]="selectedType === type" (click)="selectType(type)">{{ type }}</button>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="stats">
-                <small class="stats-title">STATISTIQUES DU JOUR</small>
-
-                <div class="stat-row">
-                    <span>Articles traités</span>
-                    <span class="badge blue">{{ todayStats }}</span>
-                </div>
-
-                <div class="stat-row">
-                    <span>Temps moyen</span>
-                    <span class="badge green">{{ avgTime }} min</span>
-                </div>
+            <div class="cat-filter-list">
+                <button class="cat-filter" [class.active]="!selectedCategoryId" (click)="selectCategory(null)">
+                    <i class="pi pi-th-large"></i>
+                    <span>Toutes</span>
+                </button>
+                <button *ngFor="let cat of (categories$ | async) || []" class="cat-filter" [class.active]="selectedCategoryId === cat._id" (click)="selectCategory(cat._id)" [title]="cat.name">
+                    <img [src]="cat.image || fallbackImage" (error)="onImgError($event)" alt="{{ cat.name }}" />
+                    <span>{{ cat.name }}</span>
+                </button>
             </div>
         </p-card>
     </div>
@@ -55,54 +45,44 @@
             </div>
         </p-card>
 
-        <!-- ARTICLES TABLE -->
+        <!-- RECENTLY USED ARTICLES -->
+        <p-card class="mb-3" *ngIf="recentArticles.length">
+            <h4 class="panel-title"><i class="pi pi-history" style="margin-right: 0.4rem"></i> Articles récents</h4>
+            <div class="recent-list">
+                <button *ngFor="let article of recentArticles" class="recent-chip" (click)="addArticle(article)" [title]="article.name">
+                    <img [src]="categoryImageFor(article)" (error)="onImgError($event)" alt="{{ article.name }}" />
+                    <span>{{ article.name }}</span>
+                </button>
+            </div>
+        </p-card>
+
+        <!-- ARTICLES (image card grid) -->
         <p-card class="articles-card">
             <div class="table-header">
-                <h4>Articles Disponibles ({{ (articles$ | async)?.length || 0 }})</h4>
-
-                <input pInputText placeholder="Rechercher..." (input)="dt.filterGlobal($any($event.target).value, 'contains')" />
+                <h4>Articles Disponibles ({{ (filteredArticles$ | async)?.length || 0 }})</h4>
+                <input pInputText placeholder="Rechercher (nom, réf)..." [ngModel]="articleSearch" (ngModelChange)="onPosSearch($event)" />
             </div>
 
-            <div class="table-wrapper">
-                <p-table #dt [value]="(articles$ | async) || []" [loading]="loading$ | async" responsiveLayout="scroll" [globalFilterFields]="['name', 'reference', 'type', 'shopQuantity', 'description']">
-                    <ng-template pTemplate="header">
-                        <tr>
-                            <th>Réf</th>
-                            <th>Nom</th>
-                            <th>Type</th>
-                            <th>Stock Magasin</th>
-                            <th>ACTION</th>
-                        </tr>
-                    </ng-template>
+            <!-- Sub-category chips for the selected category -->
+            <div class="subcat-chips" *ngIf="subCategoriesForSelected.length">
+                <button class="subcat-chip" [class.active]="!selectedSubCategoryId" (click)="selectSubCategory(null)">Toutes</button>
+                <button *ngFor="let sub of subCategoriesForSelected" class="subcat-chip" [class.active]="selectedSubCategoryId === sub._id" (click)="selectSubCategory(sub._id)">{{ sub.name }}</button>
+            </div>
 
-                    <ng-template pTemplate="body" let-article>
-                        <tr [class.row-highlighted]="selectedType && article.type === selectedType">
-                            <td class="mono">{{ article.reference }}</td>
-                            <td>
-                                <i *ngIf="article.featured" class="pi pi-star-fill" style="color: #f59e0b; margin-right: 0.4rem"></i>
-                                {{ article.name }}
-                            </td>
-                            <td>
-                                <span class="tag blue">{{ article.type }}</span>
-                            </td>
-                            <td>
-                                <span class="tag" [class.green]="(article.shopQuantity ?? 0) >= 20" [class.red]="(article.shopQuantity ?? 0) < 20"> {{ article.shopQuantity ?? 0 }} </span>
-                            </td>
-                            <td>
-                                <button class="btn-add" (click)="addArticle(article)">Ajouter</button>
-                            </td>
-                        </tr>
-                    </ng-template>
+            <div class="article-grid">
+                <div class="article-card" *ngFor="let article of (filteredArticles$ | async) || []">
+                    <i *ngIf="article.featured" class="pi pi-star-fill article-fav"></i>
+                    <img [src]="categoryImageFor(article)" (error)="onImgError($event)" alt="{{ article.name }}" class="article-card-img" />
+                    <strong class="article-card-name">{{ article.name }}</strong>
+                    <small class="article-card-ref">{{ article.reference || '—' }}</small>
+                    <span class="article-card-stock" [class.green]="(article.shopQuantity ?? 0) >= 20" [class.red]="(article.shopQuantity ?? 0) < 20"> Stock: {{ article.shopQuantity ?? 0 }} </span>
+                    <button class="btn-add" (click)="addArticle(article)" [disabled]="(article.shopQuantity ?? 0) <= 0">Ajouter</button>
+                </div>
 
-                    <ng-template pTemplate="emptymessage">
-                        <tr>
-                            <td colspan="5" class="empty-state">
-                                <i class="pi pi-inbox"></i>
-                                <p>Aucun article trouvé</p>
-                            </td>
-                        </tr>
-                    </ng-template>
-                </p-table>
+                <div *ngIf="!((filteredArticles$ | async)?.length)" class="empty-state">
+                    <i class="pi pi-inbox"></i>
+                    <p>Aucun article trouvé</p>
+                </div>
             </div>
         </p-card>
     </div>
@@ -332,7 +312,6 @@
                     <th>Quantity</th>
                     <th>Employee</th>
                     <th>Time</th>
-                    <th>Prix</th>
                 </tr>
             </ng-template>
             <ng-template pTemplate="body" let-row>
@@ -342,24 +321,24 @@
                     <td>{{ row.quantity || '-' }}</td>
                     <td>{{ displayEmployee(row.employee) }}</td>
                     <td>{{ row.createdAt ? (row.createdAt | date: 'HH:mm') : '-' }}</td>
-                    <td>{{ row.price ? (row.price | currency: 'TND') : '-' }}</td>
                 </tr>
             </ng-template>
             <ng-template pTemplate="emptymessage">
                 <tr>
-                    <td colspan="6" class="text-center">No confirmed sales today.</td>
+                    <td colspan="5" class="text-center">No confirmed sales today.</td>
                 </tr>
             </ng-template>
         </p-table>
 
         <ng-template pTemplate="footer">
-            <div class="flex flex-col items-start mr-auto">
-                <span class="text-sm text-surface-500">Total Revenue</span>
-                <strong class="text-xl">{{ ((todayRevenue$ | async) || 0) | currency: 'TND' }}</strong>
-            </div>
             <p-button label="Fermer" icon="pi pi-times" severity="secondary" outlined (onClick)="closeTodayIncomeDialog()" />
         </ng-template>
     </p-dialog>
+
+<!-- ================= RETURNS (New Return + tracking table) ================= -->
+<div class="returns-section mt-4">
+    <app-article-return />
+</div>
 
 <p-toast />
 <p-confirmDialog />

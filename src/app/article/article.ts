@@ -24,6 +24,10 @@ import * as ProviderAction from '../store/provider-store/provider.actions';
 import * as ArticleSelectors from '../store/article-store/article.selectors';
 import * as TransferActions from '../store/stock-transfer-store/stock-transfer.actions';
 import * as TransferSelectors from '../store/stock-transfer-store/stock-transfer.selectors';
+import * as CategoryActions from '../store/category-store/category.actions';
+import * as CategorySelectors from '../store/category-store/category.selectors';
+import * as SubCategoryActions from '../store/sub-category-store/sub-category.actions';
+import * as SubCategorySelectors from '../store/sub-category-store/sub-category.selectors';
 import { Store } from '@ngrx/store';
 import { selectProvidersForDropdown } from '@/store/provider-store/provider.selectors';
 import { Actions, ofType } from '@ngrx/effects';
@@ -98,21 +102,25 @@ export class Article {
     // calls made later in ngOnInit (which is NOT an injection context).
     private readonly destroyRef = inject(DestroyRef);
 
-    // Article Types — value === label so the order-service left panel
-    // (driven by selectUniqueTypes) shows real business labels.
-    articleTypes = [
-        { value: 'Clé maison', label: 'Clé maison', icon: 'pi pi-home' },
-        { value: 'Clé de voiture', label: 'Clé de voiture', icon: 'pi pi-car' },
-        { value: 'Télécommande', label: 'Télécommande', icon: 'pi pi-wifi' },
-        { value: 'Tampon', label: 'Tampon', icon: 'pi pi-bookmark' },
-        { value: 'Porte-clés', label: 'Porte-clés', icon: 'pi pi-link' },
-        { value: 'Autre', label: 'Autre', icon: 'pi pi-ellipsis-h' }
-    ];
-
     providers: any[] = [];
 
+    // Dynamic classification (new). Additive — `type` below stays required so
+    // existing article creation + POS grouping are unchanged.
+    readonly fallbackImage =
+        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="%23e5e7eb"/><path d="M20 42l8-10 6 7 5-6 9 9H20z" fill="%239ca3af"/><circle cx="24" cy="24" r="5" fill="%239ca3af"/></svg>';
+
+    // All categories / sub-categories, kept locally so the cascade can filter
+    // and the table can resolve names without extra round-trips.
+    allCategories: any[] = [];
+    allSubCategories: any[] = [];
+
+    // Category now replaces the legacy Type selector. `type` stays in the form
+    // (and schema) but is no longer user-facing: it is derived from the chosen
+    // category's name on save, keeping POS grouping + old articles working.
     articleForm = new FormGroup({
-        type: new FormControl('', Validators.required),
+        type: new FormControl(''),
+        category: new FormControl<string | null>(null, Validators.required),
+        subCategory: new FormControl<string | null>(null),
         name: new FormControl('', Validators.required),
         reference: new FormControl(''),
         purchasePrice: new FormControl(null, Validators.required),
@@ -134,6 +142,7 @@ export class Article {
     error$: Observable<string | null> | undefined;
     transfers$: Observable<any[]> | undefined;
     transferLoading$: Observable<boolean> | undefined;
+    categories$: Observable<any[]> | undefined;
 
     constructor(
         private store: Store,
@@ -145,11 +154,26 @@ export class Article {
         this.providers$ = this.store.select(selectProvidersForDropdown);
         this.transfers$ = this.store.select(TransferSelectors.selectAllTransfers);
         this.transferLoading$ = this.store.select(TransferSelectors.selectTransferLoading);
+        this.categories$ = this.store.select(CategorySelectors.selectActiveCategories);
     }
 
     ngOnInit() {
         this.store.dispatch(ArticleAction.loadArticle());
         this.store.dispatch(ProviderAction.loadProvider());
+        this.store.dispatch(CategoryActions.loadCategories());
+        this.store.dispatch(SubCategoryActions.loadSubCategories({}));
+
+        // Keep a local copy of all sub-categories so the article form's
+        // Category → SubCategory cascade can filter without extra requests.
+        this.store
+            .select(SubCategorySelectors.selectAllSubCategories)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((list) => (this.allSubCategories = list));
+
+        this.store
+            .select(CategorySelectors.selectAllCategories)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((list) => (this.allCategories = list));
 
         // Close the transfer modal once the create succeeds; the article
         // store is auto-refreshed by the chained effect.
@@ -181,6 +205,8 @@ export class Article {
         // Use patchValue to populate the form
         this.articleForm.patchValue({
             type: article.type,
+            category: this.refId(article.category),
+            subCategory: this.refId(article.subCategory),
             name: article.name,
             reference: article.reference,
             purchasePrice: article.purchasePrice,
@@ -193,6 +219,7 @@ export class Article {
             commissionPercent: article.commissionPercent ?? 0
         });
 
+        this.applySubCategoryValidator();
         this.submitted = false;
         this.articleDialog = true;
     }
@@ -207,13 +234,22 @@ export class Article {
             return;
         }
 
+        // Derive the legacy `type` from the chosen category's name so POS
+        // grouping (selectUniqueTypes) and any old type-based logic keep
+        // working even though the Type field is no longer shown.
+        const selectedCategory = this.allCategories.find((c) => c._id === this.articleForm.get('category')?.value);
+        const payload = {
+            ...this.articleForm.value,
+            type: selectedCategory?.name ?? this.articleForm.get('type')?.value ?? ''
+        };
+
         if (this.isEditMode && this.currentArticleId) {
             // Update existing article
             this.store.dispatch(
                 ArticleAction.updateArticle({
                     article: {
                         id: this.currentArticleId,
-                        ...this.articleForm.value
+                        ...payload
                     }
                 })
             );
@@ -221,7 +257,7 @@ export class Article {
             // Create new article
             this.store.dispatch(
                 ArticleAction.createArticle({
-                    article: this.articleForm.value
+                    article: payload
                 })
             );
         }
@@ -340,6 +376,52 @@ export class Article {
         this.isEditMode = false;
         this.currentArticleId = null;
         this.articleForm.reset();
+    }
+
+    // ===== Dynamic category → sub-category cascade =====
+
+    // Ref fields can be a populated object OR a raw id string.
+    private refId(value: any): string | null {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        return typeof value._id === 'string' ? value._id : null;
+    }
+
+    // Image grid selection. Changing the category clears the sub-category.
+    selectCategory(categoryId: string | null | undefined): void {
+        if (!categoryId || this.articleForm.get('category')?.value === categoryId) return;
+        this.articleForm.patchValue({ category: categoryId, subCategory: null });
+        this.applySubCategoryValidator();
+    }
+
+    // Sub-categories belonging to the currently selected category.
+    get filteredSubCategories(): any[] {
+        const categoryId = this.articleForm.get('category')?.value;
+        if (!categoryId) return [];
+        return this.allSubCategories.filter((s) => s.active !== false && this.refId(s.category) === categoryId);
+    }
+
+    // Require a sub-category only when the chosen category actually has some,
+    // so a category without sub-categories never blocks article creation.
+    private applySubCategoryValidator(): void {
+        const subCtrl = this.articleForm.get('subCategory');
+        subCtrl?.setValidators(this.filteredSubCategories.length ? [Validators.required] : []);
+        subCtrl?.updateValueAndValidity({ emitEvent: false });
+    }
+
+    // Table display: new articles show "Category › SubCategory"; legacy
+    // articles without a category fall back to the old `type` string.
+    displayClassification(article: any): string {
+        if (!article?.category) return article?.type || '-';
+        const catId = this.refId(article.category);
+        const subId = this.refId(article.subCategory);
+        const catName = this.allCategories.find((c) => c._id === catId)?.name ?? article?.type ?? '-';
+        const subName = this.allSubCategories.find((s) => s._id === subId)?.name;
+        return subName ? `${catName} › ${subName}` : catName;
+    }
+
+    onImgError(event: Event): void {
+        (event.target as HTMLImageElement).src = this.fallbackImage;
     }
 
     // Get dialog title dynamically

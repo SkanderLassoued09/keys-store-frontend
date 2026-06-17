@@ -609,3 +609,178 @@ tr.row-highlighted {
 .w-full {
     width: 100%;
 }
+
+/* ===== POS category filter (left panel) ===== */
+.cat-filter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.cat-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.85rem;
+
+    img {
+        width: 28px;
+        height: 28px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+
+    i {
+        width: 28px;
+        text-align: center;
+        color: #6b7280;
+    }
+
+    &.active {
+        border-color: #6366f1;
+        background: #eef2ff;
+        font-weight: 600;
+    }
+
+    &:hover {
+        border-color: #6366f1;
+    }
+}
+
+/* ===== Recently used strip ===== */
+.recent-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.recent-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.8rem;
+
+    img {
+        width: 22px;
+        height: 22px;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    &:hover {
+        border-color: #6366f1;
+    }
+}
+
+/* ===== Sub-category chips ===== */
+.subcat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+}
+
+.subcat-chip {
+    padding: 0.25rem 0.7rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.78rem;
+
+    &.active {
+        border-color: #6366f1;
+        background: #eef2ff;
+        font-weight: 600;
+    }
+}
+
+/* ===== Article image cards ===== */
+.article-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.article-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+
+    .article-fav {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        color: #f59e0b;
+    }
+
+    .article-card-img {
+        width: 64px;
+        height: 64px;
+        object-fit: cover;
+        border-radius: 8px;
+        background: #f3f4f6;
+    }
+
+    .article-card-name {
+        font-size: 0.85rem;
+        text-align: center;
+        line-height: 1.1;
+    }
+
+    .article-card-ref {
+        color: #9ca3af;
+        font-size: 0.72rem;
+    }
+
+    .article-card-stock {
+        font-size: 0.72rem;
+        padding: 0.1rem 0.5rem;
+        border-radius: 999px;
+        background: #f3f4f6;
+
+        &.green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        &.red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    }
+
+    .btn-add {
+        margin-top: 0.25rem;
+        width: 100%;
+        padding: 0.35rem;
+        border: none;
+        border-radius: 6px;
+        background: #6366f1;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.8rem;
+
+        &:disabled {
+            background: #c7d2fe;
+            cursor: not-allowed;
+        }
+    }
+}

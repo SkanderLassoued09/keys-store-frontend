@@ -1,0 +1,93 @@
+<p-toast />
+
+<p-toolbar class="mb-4">
+    <ng-template #start>
+        <h2 class="text-xl font-semibold m-0">Tâches</h2>
+    </ng-template>
+    <ng-template #end>
+        <p-button label="Nouvelle tâche" icon="pi pi-plus" (onClick)="openNew()" />
+    </ng-template>
+</p-toolbar>
+
+<!-- Filters: search + employee -->
+<div class="flex flex-col md:flex-row gap-3 mb-4">
+    <p-iconfield iconPosition="left">
+        <p-inputicon styleClass="pi pi-search" />
+        <input pInputText [(ngModel)]="searchTerm" placeholder="Rechercher par titre..." />
+    </p-iconfield>
+    <p-select [(ngModel)]="filterEmployee" [options]="(employees$ | async) || []" optionLabel="name" optionValue="id" placeholder="Filtrer par employé" [showClear]="true" appendTo="body" />
+</div>
+
+<!-- Kanban board -->
+<div class="kanban-board">
+    <div class="kanban-col" *ngFor="let col of columns">
+        <div class="kanban-col-header">
+            <span class="font-semibold">{{ col.label }}</span>
+            <p-tag [value]="tasksFor(col.status).length + ''" severity="secondary" />
+        </div>
+
+        <div class="kanban-col-body">
+            <div class="kanban-card" *ngFor="let task of tasksFor(col.status)">
+                <div class="flex items-start justify-between gap-2">
+                    <strong class="task-title">{{ task.title }}</strong>
+                    <p-tag [value]="task.priority || 'medium'" [severity]="prioritySeverity(task.priority)" />
+                </div>
+                <p class="task-desc" *ngIf="task.description">{{ task.description }}</p>
+                <div class="task-meta">
+                    <span><i class="pi pi-user"></i> {{ displayEmployee(task.employee) }}</span>
+                    <span *ngIf="task.dueDate"><i class="pi pi-calendar"></i> {{ task.dueDate | date: 'dd/MM/yy' }}</span>
+                </div>
+                <div class="task-actions">
+                    <p-button icon="pi pi-arrow-left" [text]="true" [rounded]="true" size="small" (onClick)="moveTask(task, -1)" [disabled]="!canMove(task, -1)" pTooltip="Reculer" />
+                    <p-button icon="pi pi-arrow-right" [text]="true" [rounded]="true" size="small" (onClick)="moveTask(task, 1)" [disabled]="!canMove(task, 1)" pTooltip="Avancer" />
+                    <span class="flex-1"></span>
+                    <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" size="small" (onClick)="openEdit(task)" pTooltip="Modifier" />
+                    <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" size="small" (onClick)="remove(task)" pTooltip="Supprimer" />
+                </div>
+            </div>
+
+            <div class="kanban-empty" *ngIf="!tasksFor(col.status).length">Aucune tâche</div>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [closable]="true" [style]="{ width: '560px' }" [header]="isEditMode ? 'Modifier la tâche' : 'Nouvelle tâche'">
+    <form [formGroup]="taskForm" class="flex flex-col gap-4" (ngSubmit)="save()">
+        <div class="flex flex-col gap-1">
+            <label>Titre <span class="text-red-500">*</span></label>
+            <input pInputText formControlName="title" placeholder="Ex: Réparer la machine X" />
+            <small class="text-red-500" *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched">Le titre est obligatoire.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label>Description</label>
+            <textarea pInputTextarea formControlName="description" rows="2"></textarea>
+        </div>
+        <div class="flex flex-col md:flex-row gap-3">
+            <div class="flex flex-col gap-1 flex-1">
+                <label>Statut</label>
+                <p-select formControlName="status" [options]="statusOptions" optionLabel="label" optionValue="value" appendTo="body" />
+            </div>
+            <div class="flex flex-col gap-1 flex-1">
+                <label>Priorité</label>
+                <p-select formControlName="priority" [options]="priorityOptions" optionLabel="label" optionValue="value" appendTo="body" />
+            </div>
+        </div>
+        <div class="flex flex-col md:flex-row gap-3">
+            <div class="flex flex-col gap-1 flex-1">
+                <label>Assigné à</label>
+                <p-select formControlName="employee" [options]="(employees$ | async) || []" optionLabel="name" optionValue="id" placeholder="Employé" [filter]="true" [showClear]="true" appendTo="body" />
+            </div>
+            <div class="flex flex-col gap-1 flex-1">
+                <label>Échéance</label>
+                <p-datepicker formControlName="dueDate" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" />
+            </div>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" icon="pi pi-times" severity="secondary" [text]="true" (onClick)="closeDialog()" />
+        <p-button label="Enregistrer" icon="pi pi-check" (onClick)="save()" [disabled]="taskForm.invalid || (saving$ | async) || false" [loading]="(saving$ | async) || false" />
+    </ng-template>
+</p-dialog>
+
+<p-confirmDialog [style]="{ width: '450px' }" />

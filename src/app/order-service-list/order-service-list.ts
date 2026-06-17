@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -25,6 +26,8 @@ import * as OrderActions from '../store/order-service-store/order.service.action
 import * as OrderSelectors from '../store/order-service-store/order.service.selectors';
 import * as ClientSelectors from '../store/client-store/client.selectors';
 import * as ClientActions from '../store/client-store/client.actions';
+import * as SettingsActions from '../store/settings-store/settings.actions';
+import * as SettingsSelectors from '../store/settings-store/settings.selectors';
 import { displayEmployee, refId, WorkOrder } from '../store/order-service-store/work-order.model';
 // import * as EmployeeActions from '../store/employee-store/employee.actions';
 // import * as MachineSelectors from '../store/machine-store/machine.selectors';
@@ -59,11 +62,20 @@ import { displayEmployee, refId, WorkOrder } from '../store/order-service-store/
     styleUrl: './order-service-list.scss'
 })
 export class OrderList {
+    private readonly destroyRef = inject(DestroyRef);
+
     // Dialog state
     orderDialog: boolean = false;
     submitted: boolean = false;
     isEditMode: boolean = false;
     currentOrderId: string | null = null;
+
+    // Commission modal (global service commission % — replaces the old page).
+    commissionDialog: boolean = false;
+    commissionForm = new FormGroup({
+        serviceCommissionPercent: new FormControl<number | null>(0, [Validators.required, Validators.min(0)])
+    });
+    commissionSaving$: Observable<boolean>;
 
     // Status options - matching WorkOrder entity
     statusOptions = [
@@ -91,32 +103,107 @@ export class OrderList {
     client$: Observable<any[]> | undefined;
     employee$: Observable<any[]> | undefined;
     machine$: Observable<any[]> | undefined;
+    // Financial-view aggregates (computed from the date-filtered order list).
     totalRevenue$: Observable<number>;
-    selectedDate: Date = new Date();
-    private selectedDateSubject = new BehaviorSubject<Date>(this.selectedDate);
+    salesCount$: Observable<number>;
+    returnsCount$: Observable<number>;
+    averageTicket$: Observable<number>;
+
+    // Date-range filter. Bound to the range picker; quick-filter buttons set it.
+    dateRange: Date[] = this.todayRange();
+    activeQuickFilter: 'today' | 'yesterday' | 'week' | 'month' | 'custom' = 'today';
+    private rangeSubject = new BehaviorSubject<{ from: Date; to: Date }>({ from: this.dateRange[0], to: this.dateRange[1] });
 
     // Template helper — handles populated object OR raw ObjectId string.
     readonly displayEmployee = displayEmployee;
 
     constructor(private store: Store) {
-        this.order$ = combineLatest([this.store.select(OrderSelectors.selectAllOrders), this.selectedDateSubject]).pipe(map(([orders, selectedDate]) => orders.filter((order) => OrderSelectors.isSameDay(order.createdAt, selectedDate))));
+        this.order$ = combineLatest([this.store.select(OrderSelectors.selectAllOrders), this.rangeSubject]).pipe(
+            map(([orders, range]) =>
+                orders.filter((order) => {
+                    if (!order.createdAt) return false;
+                    const t = new Date(order.createdAt).getTime();
+                    return t >= range.from.getTime() && t <= range.to.getTime();
+                })
+            )
+        );
         this.totalRevenue$ = this.order$.pipe(map((orders) => OrderSelectors.totalRevenue(orders)));
+        this.salesCount$ = this.order$.pipe(map((orders) => OrderSelectors.salesCount(orders)));
+        this.returnsCount$ = this.order$.pipe(map((orders) => OrderSelectors.returnsCount(orders)));
+        this.averageTicket$ = this.order$.pipe(map((orders) => OrderSelectors.averageTicket(orders)));
         this.loading$ = this.store.select(OrderSelectors.selectOrderLoading);
         this.error$ = this.store.select(OrderSelectors.selectOrderError);
         this.client$ = this.store.select(ClientSelectors.selectClientFromDropdown);
+        this.commissionSaving$ = this.store.select(SettingsSelectors.selectSettingsSaving);
         // this.employee$ = this.store.select(EmployeeSelectors.selectEmployeeFromDropdown);
         // this.machine$ = this.store.select(MachineSelectors.selectMachineFromDropdown);
+
+        // Keep the commission form in sync with the loaded settings.
+        this.store
+            .select(SettingsSelectors.selectServiceCommissionPercent)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((percent) => this.commissionForm.patchValue({ serviceCommissionPercent: Number(percent ?? 0) }, { emitEvent: false }));
     }
 
-    onSelectedDateChange(date: Date | null): void {
-        if (!date) return;
-        this.selectedDate = date;
-        this.selectedDateSubject.next(date);
-        this.loadOrdersForSelectedDate();
+    // ===== Commission employé modal =====
+    openCommissionDialog(): void {
+        this.store.dispatch(SettingsActions.loadSettings());
+        this.commissionDialog = true;
+    }
+
+    closeCommissionDialog(): void {
+        this.commissionDialog = false;
+    }
+
+    saveCommission(): void {
+        this.commissionForm.markAllAsTouched();
+        if (this.commissionForm.invalid) return;
+        this.store.dispatch(
+            SettingsActions.updateSettings({
+                settings: { serviceCommissionPercent: Number(this.commissionForm.value.serviceCommissionPercent ?? 0) }
+            })
+        );
+        this.commissionDialog = false;
+    }
+
+    // Range picker change — only react once both ends are picked.
+    onRangeChange(range: Date[] | null): void {
+        if (!range || !range[0]) return;
+        const from = new Date(range[0]);
+        const to = new Date(range[1] ?? range[0]);
+        this.activeQuickFilter = 'custom';
+        this.applyRange(from, to);
+    }
+
+    // Quick filters — Today / Yesterday / This Week / This Month.
+    quickFilter(kind: 'today' | 'yesterday' | 'week' | 'month'): void {
+        this.activeQuickFilter = kind;
+        const now = new Date();
+        let from = new Date();
+        let to = new Date();
+        if (kind === 'today') {
+            from = now;
+            to = now;
+        } else if (kind === 'yesterday') {
+            from = new Date(now);
+            from.setDate(now.getDate() - 1);
+            to = new Date(from);
+        } else if (kind === 'week') {
+            // Monday → today
+            const day = (now.getDay() + 6) % 7;
+            from = new Date(now);
+            from.setDate(now.getDate() - day);
+            to = now;
+        } else {
+            from = new Date(now.getFullYear(), now.getMonth(), 1);
+            to = now;
+        }
+        this.dateRange = [new Date(from), new Date(to)];
+        this.applyRange(from, to);
     }
 
     ngOnInit() {
-        this.loadOrdersForSelectedDate();
+        this.applyRange(this.dateRange[0], this.dateRange[1]);
         this.store.dispatch(ClientActions.loadClient());
         // this.store.dispatch(EmployeeActions.loadEmployee());
         // this.store.dispatch(MachineActions.loadMachine());
@@ -223,19 +310,19 @@ export class OrderList {
         return option?.severity || 'info';
     }
 
-    private loadOrdersForSelectedDate(): void {
-        this.store.dispatch(OrderActions.loadOrder({ filter: this.dateFilter(this.selectedDate) }));
+    // Normalise to day bounds, push to the client-side filter, and refetch the
+    // matching window from the backend (same from/to API the shop uses).
+    private applyRange(fromDate: Date, toDate: Date): void {
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        this.rangeSubject.next({ from, to });
+        this.store.dispatch(OrderActions.loadOrder({ filter: { from: from.toISOString(), to: to.toISOString() } }));
     }
 
-    private dateFilter(date: Date): { from: string; to: string } {
-        const from = new Date(date);
-        from.setHours(0, 0, 0, 0);
-        const to = new Date(date);
-        to.setHours(23, 59, 59, 999);
-        return {
-            from: from.toISOString(),
-            to: to.toISOString()
-        };
+    private todayRange(): Date[] {
+        return [new Date(), new Date()];
     }
 
     // Get status label

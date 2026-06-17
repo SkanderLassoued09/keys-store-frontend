@@ -15,7 +15,8 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TagModule } from 'primeng/tag';
 import { DatePicker, DatePickerModule } from 'primeng/datepicker';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 import * as MachineActions from '../store/machine-store/machine.actions';
 import * as MachineSelectors from '../store/machine-store/machine.selectors';
@@ -67,9 +68,17 @@ export class MachineList {
         { label: 'Vendu', value: 'sold', severity: 'info' }
     ];
 
+    // Placeholder shown when a machine has no image or the URL fails to load.
+    readonly fallbackImage =
+        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="%23e5e7eb"/><path d="M24 54l12-15 9 11 7-9 12 13H24z" fill="%239ca3af"/><circle cx="30" cy="30" r="6" fill="%239ca3af"/></svg>';
+
+    machineSearch = '';
+    private searchSubject = new BehaviorSubject<string>('');
+
     // Form - matching Machine entity fields
     machineForm = new FormGroup({
         name: new FormControl('', Validators.required),
+        image: new FormControl(''),
         type: new FormControl(''),
         serialNumber: new FormControl(''),
         fournisseur: new FormControl(''),
@@ -79,6 +88,7 @@ export class MachineList {
 
     // NGRX Observables
     machine$: Observable<any[]>;
+    filteredMachines$: Observable<any[]>;
     loading$: Observable<boolean>;
     error$: Observable<string | null>;
     provider$: Observable<any[]> | undefined;
@@ -88,6 +98,15 @@ export class MachineList {
         this.loading$ = this.store.select(MachineSelectors.selectMachineLoading);
         this.error$ = this.store.select(MachineSelectors.selectMachineError);
         this.provider$ = this.store.select(ProviderSelectors.selectProvidersForDropdown);
+
+        // Reactive, client-side search over the visual gallery (name/type/serial).
+        this.filteredMachines$ = combineLatest([this.machine$, this.searchSubject]).pipe(
+            map(([machines, term]) => {
+                const q = (term || '').trim().toLowerCase();
+                if (!q) return machines;
+                return machines.filter((m) => `${m?.name ?? ''} ${m?.type ?? ''} ${m?.serialNumber ?? ''}`.toLowerCase().includes(q));
+            })
+        );
     }
 
     ngOnInit() {
@@ -114,6 +133,7 @@ export class MachineList {
 
         this.machineForm.patchValue({
             name: machine.name,
+            image: machine.image ?? '',
             type: machine.type,
             serialNumber: machine.serialNumber,
             fournisseur: machine.fournisseur,
@@ -197,5 +217,31 @@ export class MachineList {
     getStatusLabel(status: string): string {
         const option = this.statusOptions.find((s) => s.value === status);
         return option?.label || status;
+    }
+
+    // ===== Image + gallery helpers =====
+
+    // Read a chosen file into a base64 data URI on the image control — supports
+    // both URL paste and local upload without any backend storage dependency.
+    onImageSelected(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => this.machineForm.patchValue({ image: String(reader.result) });
+        reader.readAsDataURL(file);
+    }
+
+    clearImage(): void {
+        this.machineForm.patchValue({ image: '' });
+    }
+
+    onImgError(event: Event): void {
+        (event.target as HTMLImageElement).src = this.fallbackImage;
+    }
+
+    onSearch(value: string): void {
+        this.machineSearch = value;
+        this.searchSubject.next(value);
     }
 }

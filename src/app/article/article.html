@@ -41,7 +41,7 @@
             <th>Stock Maison</th>
             <th>Stock Magasin</th>
             <th>Fournisseur</th>
-            <th>Type</th>
+            <th>Catégorie</th>
             <th>Vedette</th>
             <th style="min-width: 10rem">Actions</th>
         </tr>
@@ -62,7 +62,7 @@
                 <p-tag *ngIf="isShopLow(item.shopQuantity)" value="Stock magasin faible" severity="warn" />
             </td>
             <td>{{ item.fournisseur }}</td>
-            <td>{{ item.type }}</td>
+            <td>{{ displayClassification(item) }}</td>
             <td>
                 <i *ngIf="item.featured" class="pi pi-star-fill" style="color: #f59e0b" pTooltip="Article vedette"></i>
             </td>
@@ -81,19 +81,46 @@
 
 <p-dialog [(visible)]="articleDialog" [style]="{ width: '650px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" styleClass="article-dialog">
     <form [formGroup]="articleForm" class="article-form" (ngSubmit)="saveArticle()">
-        <!-- 🔹 Article Type -->
+        <!-- 🔹 Catégorie (image-based selection) — replaces the legacy Type field -->
         <div class="form-section">
-            <label class="section-label">Type d'article <span class="required">*</span></label>
-            <div class="type-grid">
-                <div class="type-option" *ngFor="let type of articleTypes" [class.selected]="articleForm.get('type')?.value === type.value" (click)="articleForm.patchValue({type: type.value})">
-                    <p-radiobutton name="type" [value]="type.value" formControlName="type" [inputId]="type.value"> </p-radiobutton>
-                    <div class="type-content">
-                        <i [class]="type.icon"></i>
-                        <div class="type-label">{{ type.label }}</div>
-                    </div>
+            <label class="section-label">Catégorie <span class="required">*</span></label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <button
+                    type="button"
+                    *ngFor="let cat of (categories$ | async) || []"
+                    class="cat-card"
+                    [class.selected]="articleForm.get('category')?.value === cat._id"
+                    (click)="selectCategory(cat._id)"
+                    [title]="cat.name"
+                >
+                    <img [src]="cat.image || fallbackImage" (error)="onImgError($event)" alt="{{ cat.name }}" class="cat-card-img" />
+                    <span class="cat-card-label">{{ cat.name }}</span>
+                </button>
+            </div>
+            <small class="text-surface-500" *ngIf="!((categories$ | async)?.length)">
+                Aucune catégorie. Ajoutez-en depuis Paramètres → Catégories.
+            </small>
+            <small class="error-message block" *ngIf="submitted && articleForm.get('category')?.invalid"> Veuillez sélectionner une catégorie </small>
+
+            <!-- Step 2: sub-category, filtered by the selected category -->
+            <div class="form-row mt-3" *ngIf="articleForm.get('category')?.value">
+                <div class="form-field">
+                    <label for="subCategory">Sous-catégorie</label>
+                    <p-select
+                        id="subCategory"
+                        formControlName="subCategory"
+                        [options]="filteredSubCategories"
+                        optionLabel="name"
+                        optionValue="_id"
+                        placeholder="Sélectionner une sous-catégorie"
+                        [filter]="true"
+                        [showClear]="true"
+                        appendTo="body"
+                    />
+                    <small class="text-surface-500" *ngIf="!filteredSubCategories.length">Aucune sous-catégorie pour cette catégorie.</small>
+                    <small class="error-message" *ngIf="submitted && articleForm.get('subCategory')?.invalid"> Veuillez sélectionner une sous-catégorie </small>
                 </div>
             </div>
-            <small class="error-message" *ngIf="submitted && articleForm.get('type')?.invalid"> Veuillez sélectionner un type </small>
         </div>
 
         <!-- 🔹 Basic Information -->

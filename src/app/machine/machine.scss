@@ -118,3 +118,97 @@
     justify-content: flex-end;
     gap: 0.75rem;
 }
+
+/* ===== Visual machine gallery ===== */
+.machine-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.machine-card {
+    border: 1px solid var(--surface-200, #e5e7eb);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface-0, #fff);
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+
+    .machine-card-img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        display: block;
+        background: var(--surface-100, #f3f4f6);
+    }
+
+    .machine-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        padding: 0.75rem;
+    }
+
+    .machine-card-name {
+        font-size: 0.95rem;
+    }
+
+    .machine-card-meta {
+        color: var(--surface-500, #6b7280);
+        font-size: 0.78rem;
+    }
+
+    .machine-card-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.1rem;
+        margin-top: 0.25rem;
+    }
+
+    &:hover {
+        border-color: var(--primary-color, #6366f1);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+    }
+}
+
+.machine-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--surface-400, #9ca3af);
+    padding: 2.5rem 0;
+
+    i {
+        font-size: 1.5rem;
+    }
+}
+
+.machine-thumb {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--surface-200, #e5e7eb);
+    background: var(--surface-100, #f3f4f6);
+    flex-shrink: 0;
+}
+
+.machine-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--surface-300, #d1d5db);
+    background: var(--surface-50, #f9fafb);
+    cursor: pointer;
+    font-size: 0.85rem;
+    white-space: nowrap;
+
+    &:hover {
+        background: var(--surface-100, #f3f4f6);
+    }
+}

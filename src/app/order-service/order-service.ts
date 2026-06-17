@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -36,6 +36,10 @@ import * as EmployeeActions from '../store/employee-store/emloyee.actions';
 import * as EmployeeSelectors from '../store/employee-store/employee.selectors';
 import * as OrderServiceActions from '../store/order-service-store/order.service.actions';
 import { selectUniqueTypes } from '../store/article-store/article.selectors';
+import * as CategoryActions from '../store/category-store/category.actions';
+import * as CategorySelectors from '../store/category-store/category.selectors';
+import * as SubCategoryActions from '../store/sub-category-store/sub-category.actions';
+import * as SubCategorySelectors from '../store/sub-category-store/sub-category.selectors';
 
 @Component({
     selector: 'app-inventory-work',
@@ -74,6 +78,20 @@ export class OrderService implements OnInit {
     selectedType: string | null = null;
     isSaving: boolean = false;
 
+    // POS category/sub-category filtering + recents.
+    private readonly RECENT_KEY = 'recentArticles';
+    selectedCategoryId: string | null = null;
+    selectedSubCategoryId: string | null = null;
+    allCategories: any[] = [];
+    allSubCategories: any[] = [];
+    recentArticles: any[] = [];
+    articleSearch = '';
+    readonly fallbackImage =
+        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="%23e5e7eb"/><path d="M20 42l8-10 6 7 5-6 9 9H20z" fill="%239ca3af"/><circle cx="24" cy="24" r="5" fill="%239ca3af"/></svg>';
+    private selectedCategorySubject = new BehaviorSubject<string | null>(null);
+    private selectedSubCategorySubject = new BehaviorSubject<string | null>(null);
+    private searchSubject = new BehaviorSubject<string>('');
+
     // Modal state
     visible: boolean = false;
     articleSelectedForModal: any = null;
@@ -91,6 +109,14 @@ export class OrderService implements OnInit {
 
     // Today's confirmed article sales dialog state.
     todayIncomeDialogVisible: boolean = false;
+
+    // Embedded returns component — lets the prominent Shop Interface "Nouveau
+    // Retour" button open its dialog directly.
+    @ViewChild(ArticleReturn) private readonly articleReturnCmp?: ArticleReturn;
+
+    openReturnDialog(): void {
+        this.articleReturnCmp?.openDialog();
+    }
 
     // Template helper used by the shop-of-the-day table.
     readonly displayEmployee = displayEmployee;
@@ -134,6 +160,8 @@ export class OrderService implements OnInit {
     // Observables from store
     articles$: Observable<any[]>;
     featuredForType$: Observable<any[]>;
+    filteredArticles$: Observable<any[]>;
+    categories$: Observable<any[]>;
     loading$: Observable<boolean>;
     error$: Observable<string | null>;
     employee$: Observable<any[]>;
@@ -157,15 +185,48 @@ export class OrderService implements OnInit {
         this.todayOrders$ = this.store.select(OrderServiceSelectors.selectTodayConfirmedOrders);
         this.todayRevenue$ = this.store.select(OrderServiceSelectors.selectTodayConfirmedRevenue);
 
+        this.categories$ = this.store.select(CategorySelectors.selectActiveCategories);
+
         // Featured/quick-access banner: pinned articles, narrowed by selected
         // type when one is active. The MAIN articles table stays untouched
         // and always shows every article.
         this.featuredForType$ = combineLatest([this.articles$, this.selectedTypeSubject]).pipe(map(([articles, type]) => articles.filter((a) => a?.featured && (!type || a?.type === type))));
+
+        // POS card grid: filter by selected Category → SubCategory and a free
+        // text search over name + reference. No filters → all articles.
+        this.filteredArticles$ = combineLatest([this.articles$, this.selectedCategorySubject, this.selectedSubCategorySubject, this.searchSubject]).pipe(
+            map(([articles, categoryId, subCategoryId, search]) => {
+                const term = (search || '').trim().toLowerCase();
+                return articles.filter((a) => {
+                    if (categoryId && this.refId(a?.category) !== categoryId) return false;
+                    if (subCategoryId && this.refId(a?.subCategory) !== subCategoryId) return false;
+                    if (term) {
+                        const hay = `${a?.name ?? ''} ${a?.reference ?? ''}`.toLowerCase();
+                        if (!hay.includes(term)) return false;
+                    }
+                    return true;
+                });
+            })
+        );
+    }
+
+    private refId(value: any): string | null {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        return typeof value._id === 'string' ? value._id : null;
     }
 
     ngOnInit(): void {
         this.store.dispatch(ArticleActions.loadArticle());
         this.store.dispatch(EmployeeActions.loadEmployee());
+        this.store.dispatch(CategoryActions.loadCategories());
+        this.store.dispatch(SubCategoryActions.loadSubCategories({}));
+
+        // Keep local copies of categories/sub-categories for filtering + images.
+        this.store.select(CategorySelectors.selectActiveCategories).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((list) => (this.allCategories = list));
+        this.store.select(SubCategorySelectors.selectAllSubCategories).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((list) => (this.allSubCategories = list));
+
+        this.loadRecentArticles();
 
         // ✅ Load articles from localStorage on init
         this.loadFromLocalStorage();
@@ -297,6 +358,68 @@ export class OrderService implements OnInit {
         this.selectedTypeSubject.next(this.selectedType);
     }
 
+    // ===== POS category / sub-category filtering =====
+
+    // Click a category card (or "Toutes") to filter the article grid. Toggling
+    // off / switching category clears the sub-category.
+    selectCategory(categoryId: string | null): void {
+        this.selectedCategoryId = this.selectedCategoryId === categoryId ? null : categoryId;
+        this.selectedSubCategoryId = null;
+        this.selectedCategorySubject.next(this.selectedCategoryId);
+        this.selectedSubCategorySubject.next(null);
+    }
+
+    selectSubCategory(subCategoryId: string | null): void {
+        this.selectedSubCategoryId = this.selectedSubCategoryId === subCategoryId ? null : subCategoryId;
+        this.selectedSubCategorySubject.next(this.selectedSubCategoryId);
+    }
+
+    // Sub-categories of the currently selected category (chips row).
+    get subCategoriesForSelected(): any[] {
+        if (!this.selectedCategoryId) return [];
+        return this.allSubCategories.filter((s) => s.active !== false && this.refId(s.category) === this.selectedCategoryId);
+    }
+
+    onPosSearch(value: string): void {
+        this.articleSearch = value;
+        this.searchSubject.next(value);
+    }
+
+    // Resolve a display image for an article from its category (articles have
+    // no own image), falling back to a placeholder.
+    categoryImageFor(article: any): string {
+        const catId = this.refId(article?.category);
+        const cat = this.allCategories.find((c) => c._id === catId);
+        return cat?.image || this.fallbackImage;
+    }
+
+    onImgError(event: Event): void {
+        (event.target as HTMLImageElement).src = this.fallbackImage;
+    }
+
+    // ===== Recently used articles (localStorage strip) =====
+    private loadRecentArticles(): void {
+        try {
+            const raw = localStorage.getItem(this.RECENT_KEY);
+            this.recentArticles = raw ? JSON.parse(raw) : [];
+        } catch {
+            this.recentArticles = [];
+        }
+    }
+
+    private pushRecentArticle(article: any): void {
+        if (!article) return;
+        const id = article._id ?? article.id;
+        if (!id) return;
+        const slim = { _id: id, name: article.name, reference: article.reference, type: article.type, category: this.refId(article.category), shopQuantity: article.shopQuantity, sellingPrice: article.sellingPrice };
+        this.recentArticles = [slim, ...this.recentArticles.filter((a) => a._id !== id)].slice(0, 8);
+        try {
+            localStorage.setItem(this.RECENT_KEY, JSON.stringify(this.recentArticles));
+        } catch {
+            /* ignore quota errors */
+        }
+    }
+
     // Open modal for new work
     openNewWork(): void {
         this.messageService.add({
@@ -408,6 +531,7 @@ export class OrderService implements OnInit {
     // ✅ Add article - open modal
     addArticle(article: any): void {
         this.articleSelectedForModal = article;
+        this.pushRecentArticle(article);
 
         // Stock-aware validator: max changes per article. Re-applied each time
         // the modal opens so the previous article's max doesn't leak.

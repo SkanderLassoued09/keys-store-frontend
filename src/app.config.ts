@@ -18,6 +18,11 @@ import * as OrderServiceEffects from '../src/app/store/order-service-store/order
 import * as StockTransferEffects from '../src/app/store/stock-transfer-store/stock-transfer.effects';
 import * as SettingsEffects from '../src/app/store/settings-store/settings.effects';
 import * as ArticleReturnEffects from '../src/app/store/article-return-store/article-return.effects';
+import * as CategoryEffects from '../src/app/store/category-store/category.effects';
+import * as SubCategoryEffects from '../src/app/store/sub-category-store/sub-category.effects';
+import * as EmployeeLedgerEffects from '../src/app/store/employee-ledger-store/employee-ledger.effects';
+import * as WorkTaskEffects from '../src/app/store/work-task-store/work-task.effects';
+import * as EmployeeDashboardEffects from '../src/app/store/employee-dashboard-store/employee-dashboard.effects';
 import { clientReducer } from '@/store/client-store/client.reducer';
 import { employeeReducer } from '@/store/employee-store/employee.reducer';
 import { providerReducer } from '@/store/provider-store/provider.reducer';
@@ -27,6 +32,11 @@ import { machineReducer } from '@/store/machine-store/machine.reducer';
 import { stockTransferReducer } from '@/store/stock-transfer-store/stock-transfer.reducer';
 import { settingsReducer } from '@/store/settings-store/settings.reducer';
 import { articleReturnReducer } from '@/store/article-return-store/article-return.reducer';
+import { categoryReducer } from '@/store/category-store/category.reducer';
+import { subCategoryReducer } from '@/store/sub-category-store/sub-category.reducer';
+import { employeeLedgerReducer } from '@/store/employee-ledger-store/employee-ledger.reducer';
+import { workTaskReducer } from '@/store/work-task-store/work-task.reducer';
+import { employeeDashboardReducer } from '@/store/employee-dashboard-store/employee-dashboard.reducer';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -35,8 +45,8 @@ export const appConfig: ApplicationConfig = {
         provideAnimationsAsync(),
         MessageService,
         providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
-        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer, stockTransfer: stockTransferReducer, settings: settingsReducer, articleReturn: articleReturnReducer }),
-        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects, StockTransferEffects, SettingsEffects, ArticleReturnEffects),
+        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer, stockTransfer: stockTransferReducer, settings: settingsReducer, articleReturn: articleReturnReducer, category: categoryReducer, subCategory: subCategoryReducer, employeeLedger: employeeLedgerReducer, workTask: workTaskReducer, employeeDashboard: employeeDashboardReducer }),
+        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects, StockTransferEffects, SettingsEffects, ArticleReturnEffects, CategoryEffects, SubCategoryEffects, EmployeeLedgerEffects, WorkTaskEffects, EmployeeDashboardEffects),
         provideStoreDevtools({ maxAge: 25 })
     ]
 };

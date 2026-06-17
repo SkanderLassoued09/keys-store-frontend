@@ -210,3 +210,46 @@
         }
     }
 }
+
+// Image-based category selection cards (responsive grid handled by Tailwind
+// grid-cols utilities in the template).
+.cat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem;
+    border: 2px solid var(--surface-200, #e5e7eb);
+    border-radius: 10px;
+    background: var(--surface-0, #fff);
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+
+    .cat-card-img {
+        width: 64px;
+        height: 64px;
+        object-fit: cover;
+        border-radius: 8px;
+        background: var(--surface-100, #f3f4f6);
+    }
+
+    .cat-card-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: center;
+        color: var(--surface-700, #374151);
+        line-height: 1.1;
+    }
+
+    &.selected {
+        border-color: var(--primary-color, #6366f1);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, #6366f1) 20%, transparent);
+    }
+
+    &:hover {
+        border-color: var(--primary-color, #6366f1);
+    }
+}
+

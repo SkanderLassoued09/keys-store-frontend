@@ -110,3 +110,27 @@
         }
     }
 }
+
+.rev-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--surface-200, #e5e7eb);
+    background: var(--surface-0, #fff);
+
+    .rev-label {
+        font-size: 0.8rem;
+        color: var(--surface-500, #6b7280);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .rev-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--surface-900, #111827);
+    }
+}

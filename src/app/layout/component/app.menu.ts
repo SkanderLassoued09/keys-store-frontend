@@ -53,7 +53,11 @@ export class AppMenu implements OnInit, OnDestroy {
                 },
                 {
                     label: 'Employeurs',
-                    items: [{ label: 'List Employés', icon: 'pi pi-fw pi-home', routerLink: ['/pages/employee'] }]
+                    items: [
+                        { label: 'Tableau de bord', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/employee-dashboard'] },
+                        { label: 'List Employés', icon: 'pi pi-fw pi-home', routerLink: ['/pages/employee'] },
+                        { label: 'Registre employé', icon: 'pi pi-fw pi-book', routerLink: ['/pages/employee-ledger'] }
+                    ]
                 },
                 {
                     label: 'Client',
@@ -66,14 +70,21 @@ export class AppMenu implements OnInit, OnDestroy {
                 {
                     label: 'Service',
                     items: [
-                        { label: 'Order List', icon: 'pi pi-fw pi-home', routerLink: ['/pages/order-service-list'] },
-                        { label: 'Order Service', icon: 'pi pi-fw pi-home', routerLink: ['/order-service'] },
+                        { label: 'Inventory Interface', icon: 'pi pi-fw pi-home', routerLink: ['/pages/order-service-list'] },
+                        { label: 'Shop Interface', icon: 'pi pi-fw pi-home', routerLink: ['/order-service'] },
                         { label: 'Article Returns', icon: 'pi pi-fw pi-undo', routerLink: ['/pages/article-return'] }
                     ]
                 },
                 {
+                    label: 'Tâches',
+                    items: [{ label: 'Tableau des tâches', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/work-task'] }]
+                },
+                {
                     label: 'Paramètres',
-                    items: [{ label: 'Commission service', icon: 'pi pi-fw pi-cog', routerLink: ['/pages/admin-settings'] }]
+                    items: [
+                        { label: 'Catégories', icon: 'pi pi-fw pi-images', routerLink: ['/pages/category'] },
+                        { label: 'Sous-catégories', icon: 'pi pi-fw pi-sitemap', routerLink: ['/pages/sub-category'] }
+                    ]
                 }
             ];
         } else {

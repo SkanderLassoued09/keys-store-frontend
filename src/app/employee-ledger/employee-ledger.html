@@ -1,0 +1,95 @@
+<p-toast />
+
+<p-toolbar class="mb-6">
+    <ng-template #start>
+        <h2 class="text-xl font-semibold m-0">Registre employé</h2>
+    </ng-template>
+    <ng-template #end>
+        <p-button label="Nouveau mouvement" icon="pi pi-plus" (onClick)="openDialog()" />
+    </ng-template>
+</p-toolbar>
+
+<p-table [value]="(entries$ | async) || []" [loading]="(loading$ | async) || false" [rows]="10" [paginator]="true" [rowHover]="true" dataKey="_id" [tableStyle]="{ 'min-width': '60rem' }">
+    <ng-template pTemplate="header">
+        <tr>
+            <th>Date</th>
+            <th>Employé</th>
+            <th>Type</th>
+            <th>Article</th>
+            <th>Quantité</th>
+            <th>Montant</th>
+            <th>Notes</th>
+            <th style="width: 6rem">Actions</th>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+        <tr>
+            <td>{{ row.date | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ displayEmployee(row.employee) }}</td>
+            <td><p-tag [value]="typeLabel(row.type)" [severity]="typeSeverity(row.type)" /></td>
+            <td>{{ displayArticle(row.article) }}</td>
+            <td>{{ row.type === 'SALARY_ADVANCE' ? '-' : (row.quantity || 0) }}</td>
+            <td>{{ (row.amount || 0) | number: '1.3-3' }} TND</td>
+            <td>{{ row.notes || '-' }}</td>
+            <td>
+                <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="remove(row)" pTooltip="Supprimer" />
+            </td>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+        <tr>
+            <td colspan="8" class="text-center">Aucun mouvement enregistré.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<p-dialog [(visible)]="dialogVisible" [modal]="true" [closable]="true" [style]="{ width: '560px' }" header="Nouveau mouvement employé">
+    <form [formGroup]="ledgerForm" class="flex flex-col gap-4" (ngSubmit)="save()">
+        <div class="flex flex-col gap-1">
+            <label>Employé <span class="text-red-500">*</span></label>
+            <p-select formControlName="employee" [options]="(employees$ | async) || []" optionLabel="name" optionValue="id" placeholder="Sélectionner un employé" [filter]="true" appendTo="body" class="w-full" />
+            <small class="text-red-500" *ngIf="ledgerForm.get('employee')?.invalid && ledgerForm.get('employee')?.touched">L'employé est obligatoire.</small>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label>Type de mouvement <span class="text-red-500">*</span></label>
+            <p-select formControlName="type" [options]="typeOptions" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
+        </div>
+
+        <ng-container *ngIf="!isSalaryAdvance">
+            <div class="flex flex-col gap-1">
+                <label>Article <span class="text-red-500">*</span></label>
+                <p-select formControlName="article" [options]="(articles$ | async) || []" optionLabel="name" optionValue="_id" placeholder="Sélectionner un article" [filter]="true" appendTo="body" class="w-full" />
+                <small class="text-red-500" *ngIf="ledgerForm.get('article')?.invalid && ledgerForm.get('article')?.touched">L'article est obligatoire.</small>
+                <small class="text-surface-500">Le stock magasin sera décrémenté en toute sécurité.</small>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label>Quantité <span class="text-red-500">*</span></label>
+                <p-inputNumber formControlName="quantity" [min]="1" [showButtons]="true" />
+            </div>
+        </ng-container>
+
+        <div class="flex flex-col gap-1" *ngIf="isSalaryAdvance">
+            <label>Montant de l'avance <span class="text-red-500">*</span></label>
+            <p-inputNumber formControlName="amount" mode="currency" currency="TND" locale="fr-TN" [min]="0" />
+            <small class="text-red-500" *ngIf="ledgerForm.get('amount')?.invalid && ledgerForm.get('amount')?.touched">Le montant est obligatoire.</small>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label>Date</label>
+            <p-datepicker formControlName="date" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" />
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label>Notes</label>
+            <textarea pInputTextarea formControlName="notes" rows="2" placeholder="Détails éventuels"></textarea>
+        </div>
+    </form>
+
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" icon="pi pi-times" severity="secondary" [text]="true" (onClick)="closeDialog()" />
+        <p-button label="Enregistrer" icon="pi pi-check" (onClick)="save()" [disabled]="ledgerForm.invalid || (saving$ | async) || false" [loading]="(saving$ | async) || false" />
+    </ng-template>
+</p-dialog>
+
+<p-confirmDialog [style]="{ width: '450px' }" />

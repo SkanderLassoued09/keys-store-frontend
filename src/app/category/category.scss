@@ -1,0 +1,26 @@
+.category-thumb {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--surface-200, #e5e7eb);
+    background: var(--surface-100, #f3f4f6);
+    flex-shrink: 0;
+}
+
+.upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--surface-300, #d1d5db);
+    background: var(--surface-50, #f9fafb);
+    cursor: pointer;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.upload-btn:hover {
+    background: var(--surface-100, #f3f4f6);
+}

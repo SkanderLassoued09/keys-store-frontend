@@ -1,0 +1,86 @@
+<div class="dash-header">
+    <div>
+        <h2 class="m-0">Tableau de bord employés</h2>
+        <span class="text-surface-500 text-sm">Performance et données financières par employé</span>
+    </div>
+
+    <div class="dash-header-actions">
+        <p-button label="Mouvement Employé" icon="pi pi-book" severity="help" outlined (onClick)="openEmployeeLedger()" />
+        <p-button label="Nouvelle Tâche" icon="pi pi-check-square" severity="info" outlined (onClick)="openNewTask()" />
+    </div>
+</div>
+
+<!-- Date range filter -->
+<div class="flex flex-col md:flex-row md:items-end gap-3 mb-5">
+    <div class="flex flex-col gap-1">
+        <label for="period" class="font-semibold text-sm">Période</label>
+        <p-datepicker
+            id="period"
+            [(ngModel)]="dateRange"
+            (ngModelChange)="onRangeChange($event)"
+            selectionMode="range"
+            [readonlyInput]="true"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            appendTo="body"
+        />
+    </div>
+
+    <!-- Summary roll-up -->
+    <ng-container *ngIf="totals$ | async as totals">
+        <div class="summary-strip">
+            <div><span class="lbl">CA total</span><strong>{{ totals.totalRevenue | currency: 'TND' }}</strong></div>
+            <div><span class="lbl">Primes</span><strong>{{ totals.totalBonus | currency: 'TND' }}</strong></div>
+            <div><span class="lbl">Avances</span><strong>{{ totals.totalAdvances | currency: 'TND' }}</strong></div>
+            <div><span class="lbl">Ordres</span><strong>{{ totals.totalWorkOrders }}</strong></div>
+        </div>
+    </ng-container>
+</div>
+
+<!-- Loading -->
+<div *ngIf="loading$ | async" class="dash-loading"><i class="pi pi-spin pi-spinner"></i> Chargement…</div>
+
+<!-- Employee KPI cards -->
+<div class="emp-grid" *ngIf="!(loading$ | async)">
+    <div class="emp-card" *ngFor="let emp of (employees$ | async) || []">
+        <div class="emp-card-head">
+            <div class="emp-avatar">{{ initials(emp.fullName) }}</div>
+            <div class="emp-identity">
+                <strong>{{ emp.fullName || 'Sans nom' }}</strong>
+                <p-tag [value]="'Productivité ' + emp.productivityScore" [severity]="productivitySeverity(emp.productivityScore)" />
+            </div>
+        </div>
+
+        <!-- Financial KPIs -->
+        <div class="kpi-section">
+            <span class="kpi-title">Finances</span>
+            <div class="kpi-row"><span>Total gagné</span><strong>{{ emp.totalEarned | currency: 'TND' }}</strong></div>
+            <div class="kpi-row"><span>Prime / bonus</span><strong>{{ emp.bonus | currency: 'TND' }}</strong></div>
+            <div class="kpi-row"><span>Avances salaire</span><strong>{{ emp.advancesTaken | currency: 'TND' }}</strong></div>
+            <div class="kpi-row"><span>Matériel emprunté</span><strong>{{ emp.materialsBorrowedValue | currency: 'TND' }}</strong></div>
+        </div>
+
+        <!-- Operational KPIs -->
+        <div class="kpi-section">
+            <span class="kpi-title">Opérations</span>
+            <div class="kpi-grid">
+                <div class="kpi-cell"><span class="num">{{ emp.articlesSold }}</span><span class="lbl">Articles vendus</span></div>
+                <div class="kpi-cell"><span class="num">{{ emp.servicesHandled }}</span><span class="lbl">Services</span></div>
+                <div class="kpi-cell"><span class="num">{{ emp.workOrdersCount }}</span><span class="lbl">Ordres</span></div>
+                <div class="kpi-cell"><span class="num">{{ emp.returnsCount }}</span><span class="lbl">Retours</span></div>
+                <div class="kpi-cell"><span class="num">{{ emp.tasksCount }}</span><span class="lbl">Tâches</span></div>
+            </div>
+        </div>
+
+        <!-- Derived -->
+        <div class="emp-card-foot">
+            <span class="lbl">Revenu généré</span>
+            <strong class="rev">{{ emp.totalEarned | currency: 'TND' }}</strong>
+        </div>
+    </div>
+
+    <div *ngIf="!((employees$ | async)?.length)" class="dash-empty">
+        <i class="pi pi-users"></i>
+        <p>Aucune donnée employé pour cette période.</p>
+    </div>
+</div>

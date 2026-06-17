@@ -13,5 +13,6 @@ export interface ArticleReturn {
     replacementArticle?: any;
     replacementQuantity?: number;
     refundedAmount?: number;
+    revenueImpact?: number;
     createdAt?: string;
 }
