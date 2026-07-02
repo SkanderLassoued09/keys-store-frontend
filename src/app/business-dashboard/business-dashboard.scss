@@ -1,0 +1,220 @@
+.bi-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.bi-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+
+    .quick-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}
+
+.bi-loading,
+.bi-error {
+    padding: 2rem;
+    text-align: center;
+    color: var(--surface-500, #6b7280);
+}
+
+.bi-error {
+    color: #ef4444;
+}
+
+.bi-empty {
+    text-align: center;
+    color: var(--surface-400, #9ca3af);
+    padding: 4rem 0;
+
+    i {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* ===== Section 1 — KPI cards ===== */
+.kpi-cards {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--surface-200, #e5e7eb);
+    border-left: 4px solid var(--p-primary-500, #6366f1);
+    border-radius: 12px;
+    background: var(--surface-0, #fff);
+
+    &.accent-green { border-left-color: #22c55e; }
+    &.accent-red { border-left-color: #ef4444; }
+    &.accent-amber { border-left-color: #f59e0b; }
+
+    .kpi-lbl {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--surface-500, #6b7280);
+    }
+
+    .kpi-val {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text-color, #1f2937);
+    }
+}
+
+/* ===== Charts grid ===== */
+.bi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.bi-col-2 {
+    grid-column: span 2;
+}
+
+.bi-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 1rem;
+}
+
+.metric-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.bi-chart {
+    height: 340px;
+}
+
+.bi-chart-sm {
+    height: 260px;
+    display: block;
+}
+
+.bi-mini-empty {
+    padding: 2rem 0;
+    text-align: center;
+    color: var(--surface-400, #9ca3af);
+    font-size: 0.85rem;
+}
+
+.returns-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+
+    div {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.5rem 0.25rem;
+        border-radius: 8px;
+        background: var(--surface-50, #f9fafb);
+    }
+
+    .lbl {
+        font-size: 0.65rem;
+        color: var(--surface-500, #6b7280);
+        text-align: center;
+    }
+
+    strong {
+        font-size: 1.05rem;
+    }
+
+    .neg {
+        color: #ef4444;
+    }
+}
+
+/* Right-align numeric table cells */
+:host ::ng-deep th.num,
+:host ::ng-deep td.num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ===== Section 16 — Summary cards ===== */
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.sum-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--surface-200, #e5e7eb);
+    border-radius: 12px;
+    background: var(--surface-0, #fff);
+
+    .ico { font-size: 1.4rem; }
+
+    .lbl {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--surface-500, #6b7280);
+    }
+
+    strong {
+        font-size: 1.1rem;
+    }
+
+    .sub {
+        font-size: 0.85rem;
+        color: var(--primary-600, #4f46e5);
+        font-weight: 600;
+    }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+    .kpi-cards { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 900px) {
+    /* Tablet → two-column */
+    .kpi-cards { grid-template-columns: repeat(2, 1fr); }
+    .summary-cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+    /* Mobile → single-column */
+    .kpi-cards { grid-template-columns: 1fr; }
+    .summary-cards { grid-template-columns: 1fr; }
+    .bi-grid { grid-template-columns: 1fr; }
+    .bi-col-2 { grid-column: span 1; }
+    .returns-kpis { grid-template-columns: repeat(2, 1fr); }
+}

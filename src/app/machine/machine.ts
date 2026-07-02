@@ -75,6 +75,10 @@ export class MachineList {
     machineSearch = '';
     private searchSubject = new BehaviorSubject<string>('');
 
+    // Upper bound for the purchase-date picker — a machine can't be bought in
+    // the future, so this guards against typos and improves date-entry clarity.
+    readonly today = new Date();
+
     // Form - matching Machine entity fields
     machineForm = new FormGroup({
         name: new FormControl('', Validators.required),

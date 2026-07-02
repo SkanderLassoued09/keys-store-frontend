@@ -1,0 +1,94 @@
+<p-toast />
+
+<p-toolbar class="mb-6">
+    <ng-template #start>
+        <div>
+            <h2 class="text-xl font-semibold m-0">Utilisateurs &amp; accès</h2>
+            <span class="text-surface-500 text-sm">Comptes de connexion (propriétaire / employé)</span>
+        </div>
+    </ng-template>
+    <ng-template #end>
+        <p-button label="Nouvel utilisateur" icon="pi pi-user-plus" (onClick)="openCreate()" />
+    </ng-template>
+</p-toolbar>
+
+<p-table [value]="users" [loading]="loading" [rows]="10" [paginator]="users.length > 10" [rowHover]="true" dataKey="id" [tableStyle]="{ 'min-width': '52rem' }">
+    <ng-template pTemplate="header">
+        <tr>
+            <th>Utilisateur</th>
+            <th>Nom affiché</th>
+            <th>Rôle</th>
+            <th>Employé lié</th>
+            <th>Statut</th>
+            <th style="width: 12rem">Actions</th>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-u>
+        <tr>
+            <td><i class="pi pi-user text-surface-400 mr-2"></i>{{ u.username }}</td>
+            <td>{{ u.displayName || '-' }}</td>
+            <td><p-tag [value]="roleLabel(u.role)" [severity]="u.role === 'admin' ? 'warn' : 'info'" /></td>
+            <td>{{ u.employeeName || '-' }}</td>
+            <td><p-tag [value]="u.isActive ? 'Actif' : 'Désactivé'" [severity]="u.isActive ? 'success' : 'danger'" /></td>
+            <td>
+                <p-button icon="pi pi-key" [text]="true" [rounded]="true" severity="secondary" (click)="openReset(u)" pTooltip="Réinitialiser le mot de passe" />
+                <p-button [icon]="u.isActive ? 'pi pi-ban' : 'pi pi-check'" [text]="true" [rounded]="true" [severity]="u.isActive ? 'danger' : 'success'" (click)="toggleActive(u)" [pTooltip]="u.isActive ? 'Désactiver' : 'Réactiver'" />
+            </td>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+        <tr>
+            <td colspan="6" class="text-center">Aucun utilisateur.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<!-- Create dialog -->
+<p-dialog [(visible)]="createDialog" [modal]="true" [style]="{ width: '520px' }" header="Nouvel utilisateur">
+    <form [formGroup]="createForm" class="flex flex-col gap-4" (ngSubmit)="create()">
+        <div class="flex flex-col gap-1">
+            <label>Nom d'utilisateur <span class="text-red-500">*</span></label>
+            <input pInputText formControlName="username" placeholder="ex : sami" autocomplete="off" />
+            <small class="text-red-500" *ngIf="createForm.get('username')?.invalid && createForm.get('username')?.touched">Min. 3 caractères.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label>Mot de passe <span class="text-red-500">*</span></label>
+            <input type="password" pInputText formControlName="password" placeholder="••••••••" autocomplete="new-password" />
+            <small class="text-red-500" *ngIf="createForm.get('password')?.invalid && createForm.get('password')?.touched">Min. 4 caractères.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label>Nom affiché</label>
+            <input pInputText formControlName="displayName" placeholder="ex : Sami Trabelsi" autocomplete="off" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label>Rôle <span class="text-red-500">*</span></label>
+            <p-select formControlName="role" [options]="roleOptions" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label>Employé lié <span class="text-surface-400 text-xs">(optionnel)</span></label>
+            <p-select formControlName="employee" [options]="(employees$ | async) || []" optionLabel="name" optionValue="id" placeholder="Aucun" [filter]="true" [showClear]="true" appendTo="body" class="w-full" />
+            <small class="text-surface-500">Lie le compte à une fiche employé pour l'attribution des ventes.</small>
+        </div>
+    </form>
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" icon="pi pi-times" severity="secondary" [text]="true" (onClick)="createDialog = false" />
+        <p-button label="Créer" icon="pi pi-check" (onClick)="create()" [disabled]="createForm.invalid || saving" [loading]="saving" />
+    </ng-template>
+</p-dialog>
+
+<!-- Reset password dialog -->
+<p-dialog [(visible)]="resetDialog" [modal]="true" [style]="{ width: '420px' }" [header]="'Réinitialiser — ' + (resetTarget?.username || '')">
+    <form [formGroup]="resetForm" class="flex flex-col gap-3" (ngSubmit)="resetPassword()">
+        <div class="flex flex-col gap-1">
+            <label>Nouveau mot de passe <span class="text-red-500">*</span></label>
+            <input type="password" pInputText formControlName="newPassword" placeholder="••••••••" autocomplete="new-password" />
+            <small class="text-red-500" *ngIf="resetForm.get('newPassword')?.invalid && resetForm.get('newPassword')?.touched">Min. 4 caractères.</small>
+        </div>
+    </form>
+    <ng-template pTemplate="footer">
+        <p-button label="Annuler" icon="pi pi-times" severity="secondary" [text]="true" (onClick)="resetDialog = false" />
+        <p-button label="Réinitialiser" icon="pi pi-key" (onClick)="resetPassword()" [disabled]="resetForm.invalid || saving" [loading]="saving" />
+    </ng-template>
+</p-dialog>
+
+<p-confirmDialog [style]="{ width: '450px' }" />

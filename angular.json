@@ -38,7 +38,13 @@
                     },
                     "configurations": {
                         "production": {
-                            "outputHashing": "all"
+                            "outputHashing": "all",
+                            "fileReplacements": [
+                                {
+                                    "replace": "src/environments/environment.ts",
+                                    "with": "src/environments/environment.production.ts"
+                                }
+                            ]
                         },
                         "development": {
                             "optimization": false,
@@ -52,10 +58,13 @@
                     "builder": "@angular-devkit/build-angular:dev-server",
                     "configurations": {
                         "production": {
-                            "buildTarget": "sakai-ng:build:production"
+                            "buildTarget": "sakai-ng:build:production",
+                            "host": "0.0.0.0",
+                            "disableHostCheck": true
                         },
                         "development": {
-                            "buildTarget": "sakai-ng:build:development"
+                            "buildTarget": "sakai-ng:build:development",
+                            "host": "localhost"
                         }
                     },
                     "defaultConfiguration": "development"

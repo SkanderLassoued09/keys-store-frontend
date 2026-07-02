@@ -78,10 +78,12 @@ export class OrderList {
     commissionSaving$: Observable<boolean>;
 
     // Status options - matching WorkOrder entity
+    // Service lifecycle only. Article sales never use these — see getStatusTag*.
     statusOptions = [
         { label: 'En attente', value: 'pending', severity: 'warning' },
         { label: 'En cours', value: 'in-progress', severity: 'info' },
-        { label: 'Terminé', value: 'done', severity: 'success' }
+        { label: 'Terminé', value: 'done', severity: 'success' },
+        { label: 'Annulé', value: 'cancelled', severity: 'danger' }
     ];
 
     // Form - matching WorkOrder entity fields
@@ -329,5 +331,28 @@ export class OrderList {
     getStatusLabel(status: string | undefined): string {
         const option = this.statusOptions.find((s) => s.value === status);
         return option?.label || status || '-';
+    }
+
+    // Domain-aware status tag. Articles are sold instantly, so they only have a
+    // financial outcome (Vendu / Retourné). Services have a lifecycle
+    // (En attente / En cours / Terminé / Annulé). Keeps the two vocabularies
+    // separate instead of forcing service statuses onto article sales.
+    private isReturnRow(item: any): boolean {
+        return item?.transactionType === 'RETURN_REPLACED' || item?.transactionType === 'RETURN_REFUNDED' || item?.refunded === true || (typeof item?.price === 'number' && item.price < 0);
+    }
+
+    getStatusTagLabel(item: any): string {
+        if (item?.entryType === 'service') {
+            return this.getStatusLabel(item?.status);
+        }
+        // article (default for legacy rows)
+        return this.isReturnRow(item) ? 'Retourné' : 'Vendu';
+    }
+
+    getStatusTagSeverity(item: any): string {
+        if (item?.entryType === 'service') {
+            return this.getStatusSeverity(item?.status);
+        }
+        return this.isReturnRow(item) ? 'danger' : 'success';
     }
 }

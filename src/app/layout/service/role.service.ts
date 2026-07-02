@@ -1,34 +1,31 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { AuthService } from './auth.service';
 
 export type UserRole = 'admin' | 'employee';
 
 /**
- * Lightweight role holder. There is no auth backend yet, so the current role is
- * read from localStorage and defaults to 'admin' (so existing admin usage is
- * unaffected). Switching a device to 'employee' makes the admin route guard
- * block restricted areas. This is the single hook to wire into a real login.
+ * Thin role accessor. Role now comes from the authenticated user (JWT), so this
+ * simply delegates to AuthService — keeping the isAdmin()/isEmployee() API that
+ * guards, the menu and components already rely on, without them each having to
+ * know about AuthService.
  */
 @Injectable({ providedIn: 'root' })
 export class RoleService {
-    private readonly KEY = 'userRole';
+    private readonly auth = inject(AuthService);
 
-    getRole(): UserRole {
-        try {
-            return localStorage.getItem(this.KEY) === 'employee' ? 'employee' : 'admin';
-        } catch {
-            return 'admin';
-        }
+    getRole(): UserRole | null {
+        return this.auth.getRole();
     }
 
     isAdmin(): boolean {
-        return this.getRole() === 'admin';
+        return this.auth.getRole() === 'admin';
     }
 
-    setRole(role: UserRole): void {
-        try {
-            localStorage.setItem(this.KEY, role);
-        } catch {
-            /* ignore storage errors */
-        }
+    isEmployee(): boolean {
+        return this.auth.getRole() === 'employee';
+    }
+
+    homePath(): string {
+        return this.auth.homePath();
     }
 }

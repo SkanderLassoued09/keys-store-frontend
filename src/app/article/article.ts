@@ -2,7 +2,6 @@ import { ChangeDetectorRef, Component, DestroyRef, inject, ViewChild } from '@an
 import { ButtonModule, Button } from 'primeng/button';
 import { ConfirmDialog, ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputNumber, InputNumberModule } from 'primeng/inputnumber';
-import { RadioButton, RadioButtonModule } from 'primeng/radiobutton';
 import { SelectModule } from 'primeng/select';
 import { Dialog, DialogModule } from 'primeng/dialog';
 import { Rating, RatingModule } from 'primeng/rating';
@@ -62,7 +61,6 @@ export interface Article {
         CommonModule,
         FileUpload,
         FormsModule,
-        RadioButton,
         InputTextModule,
         FormsModule,
         InputNumber,

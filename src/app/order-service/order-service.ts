@@ -1,5 +1,8 @@
 import { Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
+import { RoleService } from '@/layout/service/role.service';
+import { AuthService } from '@/layout/service/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
@@ -40,6 +43,8 @@ import * as CategoryActions from '../store/category-store/category.actions';
 import * as CategorySelectors from '../store/category-store/category.selectors';
 import * as SubCategoryActions from '../store/sub-category-store/sub-category.actions';
 import * as SubCategorySelectors from '../store/sub-category-store/sub-category.selectors';
+import * as ClientActions from '../store/client-store/client.actions';
+import * as ClientSelectors from '../store/client-store/client.selectors';
 
 @Component({
     selector: 'app-inventory-work',
@@ -104,7 +109,9 @@ export class OrderService implements OnInit {
         description: new FormControl(''),
         employee: new FormControl('', Validators.required),
         duration: new FormControl(15, [Validators.required, Validators.min(1)]),
-        price: new FormControl<number | null>(null, [Validators.required, Validators.min(0)])
+        price: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
+        // Optional link to a registered client. Empty = walk-in sale.
+        client: new FormControl<string | null>('')
     });
 
     // Today's confirmed article sales dialog state.
@@ -116,6 +123,27 @@ export class OrderService implements OnInit {
 
     openReturnDialog(): void {
         this.articleReturnCmp?.openDialog();
+    }
+
+    // Direct access to the task board from the shop UI (same target the
+    // employee dashboard routes to — keeps navigation consistent).
+    openTaskBoard(): void {
+        this.router.navigate(['/pages/work-task']);
+    }
+
+    // ===== Interface separation helpers =====
+    get isOwner(): boolean {
+        return this.roleService.isAdmin();
+    }
+
+    // Owners jump back to the admin shell; employees only have the Shop + tasks,
+    // so their exit is a full logout.
+    backToAdmin(): void {
+        this.router.navigate(['/']);
+    }
+
+    logout(): void {
+        this.authService.logout();
     }
 
     // Template helper used by the shop-of-the-day table.
@@ -135,7 +163,9 @@ export class OrderService implements OnInit {
     selectedArticleForm = new FormGroup({
         quantity: new FormControl(1, [Validators.required, Validators.min(1)]),
         employee: new FormControl('', Validators.required),
-        customerName: new FormControl('')
+        customerName: new FormControl(''),
+        // Optional link to a registered client. Empty = walk-in sale.
+        client: new FormControl<string | null>('')
     });
 
     readonly serviceCategoryOptions = [
@@ -165,6 +195,7 @@ export class OrderService implements OnInit {
     loading$: Observable<boolean>;
     error$: Observable<string | null>;
     employee$: Observable<any[]>;
+    clients$: Observable<any[]>;
     types$: Observable<any[]>;
     todayOrders$: Observable<WorkOrder[]>;
     todayRevenue$: Observable<number>;
@@ -175,12 +206,16 @@ export class OrderService implements OnInit {
         private store: Store,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
-        private actions$: Actions
+        private actions$: Actions,
+        private router: Router,
+        private roleService: RoleService,
+        private authService: AuthService
     ) {
         this.articles$ = this.store.select(ArticleSelectors.selectAllArticles);
         this.loading$ = this.store.select(ArticleSelectors.selectArticleLoading);
         this.error$ = this.store.select(ArticleSelectors.selectArticleError);
         this.employee$ = this.store.select(EmployeeSelectors.selectEmployeeDropdown);
+        this.clients$ = this.store.select(ClientSelectors.selectClientFromDropdown);
         this.types$ = this.store.select(selectUniqueTypes);
         this.todayOrders$ = this.store.select(OrderServiceSelectors.selectTodayConfirmedOrders);
         this.todayRevenue$ = this.store.select(OrderServiceSelectors.selectTodayConfirmedRevenue);
@@ -221,6 +256,8 @@ export class OrderService implements OnInit {
         this.store.dispatch(EmployeeActions.loadEmployee());
         this.store.dispatch(CategoryActions.loadCategories());
         this.store.dispatch(SubCategoryActions.loadSubCategories({}));
+        // Optional client selector for sales — load the client list once.
+        this.store.dispatch(ClientActions.loadClient());
 
         // Keep local copies of categories/sub-categories for filtering + images.
         this.store.select(CategorySelectors.selectActiveCategories).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((list) => (this.allCategories = list));
@@ -330,6 +367,8 @@ export class OrderService implements OnInit {
             employee: new FormControl(article.employee || '', Validators.required),
             employeeName: new FormControl(article.employeeName || ''),
             customerName: new FormControl(article.customerName || '', this.isCarKeyType(article.type) ? Validators.required : []),
+            // Optional registered-client link (walk-in sale if empty).
+            client: new FormControl(article.client || ''),
             duration: new FormControl(article.duration || 0, Validators.min(0)),
             stockQuantity: new FormControl(availableStock),
             shopQuantity: new FormControl(article.shopQuantity ?? availableStock),
@@ -437,7 +476,8 @@ export class OrderService implements OnInit {
             description: '',
             employee: '',
             duration: 15,
-            price: null
+            price: null,
+            client: ''
         });
         this.serviceModalVisible = true;
     }
@@ -468,7 +508,8 @@ export class OrderService implements OnInit {
             description: v.description,
             employee: v.employee,
             duration: v.duration,
-            price: v.price
+            price: v.price,
+            client: v.client
         });
         this.selectedArticlesFormArray.push(formGroup);
 
@@ -498,6 +539,8 @@ export class OrderService implements OnInit {
             quantity: new FormControl(1, [Validators.required, Validators.min(1)]),
             employee: new FormControl(service.employee || '', Validators.required),
             employeeName: new FormControl(''),
+            // Optional registered-client link (walk-in sale if empty).
+            client: new FormControl(service.client || ''),
             duration: new FormControl(service.duration || 15, [Validators.required, Validators.min(0)]),
             stockQuantity: new FormControl(null),
             sellingPrice: new FormControl(0),
@@ -545,7 +588,8 @@ export class OrderService implements OnInit {
         this.selectedArticleForm.reset({
             quantity: 1,
             employee: '',
-            customerName: ''
+            customerName: '',
+            client: ''
         });
 
         this.visible = true;
@@ -558,7 +602,8 @@ export class OrderService implements OnInit {
         this.selectedArticleForm.reset({
             quantity: 1,
             employee: '',
-            customerName: ''
+            customerName: '',
+            client: ''
         });
     }
 
@@ -627,6 +672,7 @@ export class OrderService implements OnInit {
             employee: formValues.employee || '', // ✅ CRITICAL: Employee ID
             employeeName: employee?.name || '', // ✅ CRITICAL: Employee Name
             customerName: formValues.customerName?.trim() || '',
+            client: formValues.client || '', // Optional registered-client link
             duration: 0,
             stockQuantity: this.articleSelectedForModal.shopQuantity ?? 0,
             shopQuantity: this.articleSelectedForModal.shopQuantity ?? 0,
@@ -776,7 +822,11 @@ export class OrderService implements OnInit {
                 // entries leave it null so the backend default applies.
                 article: isService ? null : value.id,
                 ...(isService ? { category: value.category } : {}),
-                ...(!isService && value.customerName ? { customerName: String(value.customerName).trim() } : {})
+                ...(!isService && value.customerName ? { customerName: String(value.customerName).trim() } : {}),
+                // Optional client link — only sent when one is selected, so the
+                // backend never tries to cast an empty string to an ObjectId.
+                // Omitted → sale is created normally as a walk-in.
+                ...(value.client ? { client: value.client } : {})
             };
         });
 

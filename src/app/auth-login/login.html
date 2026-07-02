@@ -1,0 +1,25 @@
+<div class="login-wrapper">
+    <form class="login-card" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="login-head">
+            <div class="login-logo"><i class="pi pi-key"></i></div>
+            <h1>Keys Store</h1>
+            <p>Connectez-vous pour continuer</p>
+        </div>
+
+        <div class="login-field">
+            <label for="username">Nom d'utilisateur</label>
+            <input id="username" type="text" pInputText formControlName="username" placeholder="ex : admin" autocomplete="username" autofocus />
+            <small class="err" *ngIf="form.get('username')?.invalid && form.get('username')?.touched">Nom d'utilisateur requis.</small>
+        </div>
+
+        <div class="login-field">
+            <label for="password">Mot de passe</label>
+            <input id="password" type="password" pInputText formControlName="password" placeholder="••••••••" autocomplete="current-password" />
+            <small class="err" *ngIf="form.get('password')?.invalid && form.get('password')?.touched">Mot de passe requis.</small>
+        </div>
+
+        <div class="login-error" *ngIf="error"><i class="pi pi-exclamation-circle"></i> {{ error }}</div>
+
+        <p-button type="submit" label="Se connecter" icon="pi pi-sign-in" styleClass="w-full" [loading]="loading" (onClick)="submit()" />
+    </form>
+</div>

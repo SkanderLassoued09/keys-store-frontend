@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule, NavigationEnd } from '@angular/router';
-import { filter, Subscription } from 'rxjs';
+import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
+import { RoleService } from '../service/role.service';
 
 @Component({
     selector: 'app-menu',
@@ -18,86 +18,81 @@ import { AppMenuitem } from './app.menuitem';
         </ul>
     `
 })
-export class AppMenu implements OnInit, OnDestroy {
-    isServiceOrder = false;
+export class AppMenu implements OnInit {
     model: MenuItem[] = [];
-    private routerSub!: Subscription;
-
-    constructor(private router: Router) {}
+    private readonly roleService = inject(RoleService);
 
     ngOnInit() {
-        // 🔁 React to URL changes
-        this.routerSub = this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
-            this.updateMenuBasedOnUrl();
-        });
-
-        // Run once on init (in case user reloads page)
-        this.updateMenuBasedOnUrl();
+        // The menu IS the navigation surface, so it's built from the role, not
+        // the URL. Employees get the operational interface only; owners get the
+        // full admin menu. Route guards enforce the same split against direct URLs.
+        this.model = this.roleService.isEmployee() ? this.employeeMenu() : this.ownerMenu();
     }
 
-    private updateMenuBasedOnUrl(): void {
-        const segments = this.router.url.split('/');
-        const serviceName = segments[2]; // e.g. "order-service"
-
-        this.isServiceOrder = serviceName === 'order-service';
-
-        if (!this.isServiceOrder) {
-            this.model = [
-                {
-                    label: 'Article',
-                    items: [{ label: 'List Article', icon: 'pi pi-fw pi-home', routerLink: ['/pages/article'] }]
-                },
-                {
-                    label: 'Fournisseur',
-                    items: [{ label: 'List Fournisseur', icon: 'pi pi-fw pi-home', routerLink: ['/pages/provider'] }]
-                },
-                {
-                    label: 'Employeurs',
-                    items: [
-                        { label: 'Tableau de bord', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/employee-dashboard'] },
-                        { label: 'List Employés', icon: 'pi pi-fw pi-home', routerLink: ['/pages/employee'] },
-                        { label: 'Registre employé', icon: 'pi pi-fw pi-book', routerLink: ['/pages/employee-ledger'] }
-                    ]
-                },
-                {
-                    label: 'Client',
-                    items: [{ label: 'List Client', icon: 'pi pi-fw pi-home', routerLink: ['/pages/client'] }]
-                },
-                {
-                    label: 'Machine',
-                    items: [{ label: 'List machine', icon: 'pi pi-fw pi-home', routerLink: ['/pages/machine'] }]
-                },
-                {
-                    label: 'Service',
-                    items: [
-                        { label: 'Inventory Interface', icon: 'pi pi-fw pi-home', routerLink: ['/pages/order-service-list'] },
-                        { label: 'Shop Interface', icon: 'pi pi-fw pi-home', routerLink: ['/order-service'] },
-                        { label: 'Article Returns', icon: 'pi pi-fw pi-undo', routerLink: ['/pages/article-return'] }
-                    ]
-                },
-                {
-                    label: 'Tâches',
-                    items: [{ label: 'Tableau des tâches', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/work-task'] }]
-                },
-                {
-                    label: 'Paramètres',
-                    items: [
-                        { label: 'Catégories', icon: 'pi pi-fw pi-images', routerLink: ['/pages/category'] },
-                        { label: 'Sous-catégories', icon: 'pi pi-fw pi-sitemap', routerLink: ['/pages/sub-category'] }
-                    ]
-                }
-            ];
-        } else {
-            this.model = [
-                {
-                    label: 'XYZ',
-                    items: [{ label: 'Test', icon: 'pi pi-fw pi-home', routerLink: ['/pages/article'] }]
-                }
-            ];
-        }
+    // ===== Employee interface: operational tools only =====
+    private employeeMenu(): MenuItem[] {
+        return [
+            {
+                label: 'Espace employé',
+                items: [
+                    { label: 'Shop Interface', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/order-service'] },
+                    { label: 'Tableau des tâches', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/work-task'] }
+                ]
+            }
+        ];
     }
 
-    ngOnDestroy() {
-        this.routerSub.unsubscribe();
+    // ===== Owner interface: full system control =====
+    private ownerMenu(): MenuItem[] {
+        return [
+            {
+                label: 'Analytique',
+                items: [{ label: 'Tableau de bord BI', icon: 'pi pi-fw pi-chart-line', routerLink: ['/pages/business-dashboard'] }]
+            },
+            {
+                label: 'Article',
+                items: [{ label: 'List Article', icon: 'pi pi-fw pi-home', routerLink: ['/pages/article'] }]
+            },
+            {
+                label: 'Fournisseur',
+                items: [{ label: 'List Fournisseur', icon: 'pi pi-fw pi-home', routerLink: ['/pages/provider'] }]
+            },
+            {
+                label: 'Employeurs',
+                items: [
+                    { label: 'Tableau de bord', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/pages/employee-dashboard'] },
+                    { label: 'List Employés', icon: 'pi pi-fw pi-home', routerLink: ['/pages/employee'] },
+                    { label: 'Registre employé', icon: 'pi pi-fw pi-book', routerLink: ['/pages/employee-ledger'] }
+                ]
+            },
+            {
+                label: 'Client',
+                items: [{ label: 'List Client', icon: 'pi pi-fw pi-home', routerLink: ['/pages/client'] }]
+            },
+            {
+                label: 'Machine',
+                items: [{ label: 'List machine', icon: 'pi pi-fw pi-home', routerLink: ['/pages/machine'] }]
+            },
+            {
+                label: 'Service',
+                items: [
+                    { label: 'Inventory Interface', icon: 'pi pi-fw pi-home', routerLink: ['/pages/order-service-list'] },
+                    { label: 'Shop Interface', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/order-service'] },
+                    { label: 'Article Returns', icon: 'pi pi-fw pi-undo', routerLink: ['/pages/article-return'] }
+                ]
+            },
+            {
+                label: 'Tâches',
+                items: [{ label: 'Tableau des tâches', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/work-task'] }]
+            },
+            {
+                label: 'Paramètres',
+                items: [
+                    { label: 'Utilisateurs & accès', icon: 'pi pi-fw pi-users', routerLink: ['/pages/users'] },
+                    { label: 'Catégories', icon: 'pi pi-fw pi-images', routerLink: ['/pages/category'] },
+                    { label: 'Sous-catégories', icon: 'pi pi-fw pi-sitemap', routerLink: ['/pages/sub-category'] }
+                ]
+            }
+        ];
     }
 }

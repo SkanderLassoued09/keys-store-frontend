@@ -91,7 +91,7 @@
             <td>{{ displayEmployee(item.employee) }}</td>
             <td>{{ item.duration|| '-' }}</td>
             <td>{{ item.price ? (item.price | currency: 'TND') : '-' }}</td>
-            <td><p-tag [value]="getStatusLabel(item.status)" [severity]="getStatusSeverity(item.status)" /></td>
+            <td><p-tag [value]="getStatusTagLabel(item)" [severity]="getStatusTagSeverity(item)" /></td>
             
             <td>
                 <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteOrder(item)" pTooltip="Supprimer" />

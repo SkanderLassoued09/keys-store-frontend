@@ -14,6 +14,8 @@ import { SubCategoryPage } from '@/sub-category/sub-category';
 import { EmployeeLedgerPage } from '@/employee-ledger/employee-ledger';
 import { WorkTaskPage } from '@/work-task/work-task';
 import { EmployeeDashboard } from '@/employee-dashboard/employee-dashboard';
+import { BusinessDashboard } from '@/business-dashboard/business-dashboard';
+import { UsersPage } from '@/users/users';
 import { adminGuard } from '@/guards/admin.guard';
 
 export default [
@@ -30,6 +32,8 @@ export default [
     { path: 'category', component: CategoryPage },
     { path: 'sub-category', component: SubCategoryPage },
     { path: 'employee-dashboard', component: EmployeeDashboard, canActivate: [adminGuard] },
+    { path: 'business-dashboard', component: BusinessDashboard, canActivate: [adminGuard] },
+    { path: 'users', component: UsersPage, canActivate: [adminGuard] },
     { path: 'employee-ledger', component: EmployeeLedgerPage },
     { path: 'work-task', component: WorkTaskPage },
     { path: 'empty', component: Empty },

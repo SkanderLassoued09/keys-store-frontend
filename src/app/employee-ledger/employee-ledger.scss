@@ -1,3 +1,46 @@
 :host {
     display: block;
 }
+
+.ledger-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.ledger-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-left: auto;
+    padding: 0.6rem 1.1rem;
+    border: 1px solid var(--surface-200, #e5e7eb);
+    border-radius: 12px;
+    background: var(--surface-0, #fff);
+
+    div {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .lbl {
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--surface-500, #6b7280);
+    }
+
+    strong {
+        font-size: 1.05rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .ledger-summary {
+        margin-left: 0;
+        width: 100%;
+        gap: 1rem;
+    }
+}

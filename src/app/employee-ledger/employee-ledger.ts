@@ -4,6 +4,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
+import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -53,6 +55,17 @@ export class EmployeeLedgerPage implements OnInit {
     employees$ = this.store.select(EmployeeSelectors.selectEmployeeDropdown);
     articles$ = this.store.select(ArticleSelectors.selectAllArticles);
 
+    // ===== Filters (date range + employee) — client-side over the loaded list.
+    filterEmployeeId: string | null = null;
+    filterRange: Date[] | null = null;
+    private readonly employeeFilter$ = new BehaviorSubject<string | null>(null);
+    private readonly rangeFilter$ = new BehaviorSubject<{ from: number; to: number } | null>(null);
+
+    // The table binds to the filtered stream; the summary rolls up what each
+    // employee has taken within the selected period.
+    filteredEntries$!: Observable<any[]>;
+    summary$!: Observable<{ count: number; totalTaken: number; totalAdvances: number; totalMaterialsValue: number; totalItems: number }>;
+
     ledgerForm = new FormGroup({
         employee: new FormControl<string | null>(null, Validators.required),
         type: new FormControl<LedgerType>('MATERIAL_BORROW', Validators.required),
@@ -68,6 +81,36 @@ export class EmployeeLedgerPage implements OnInit {
         this.store.dispatch(EmployeeActions.loadEmployee());
         this.store.dispatch(ArticleActions.loadArticle());
 
+        // Apply the employee + date-range filters to the loaded ledger.
+        this.filteredEntries$ = combineLatest([this.entries$, this.employeeFilter$, this.rangeFilter$]).pipe(
+            map(([entries, empId, range]) =>
+                (entries || []).filter((e: any) => {
+                    if (empId && this.refId(e.employee) !== empId) return false;
+                    if (range) {
+                        const t = e.date ? new Date(e.date).getTime() : e.createdAt ? new Date(e.createdAt).getTime() : NaN;
+                        if (Number.isNaN(t) || t < range.from || t > range.to) return false;
+                    }
+                    return true;
+                })
+            )
+        );
+
+        // Roll-up of the filtered set — "what was taken" in the period.
+        this.summary$ = this.filteredEntries$.pipe(
+            map((list) => {
+                const round = (v: number) => Math.round(v * 1000) / 1000;
+                const materials = list.filter((e: any) => e.type !== 'SALARY_ADVANCE');
+                const advances = list.filter((e: any) => e.type === 'SALARY_ADVANCE');
+                return {
+                    count: list.length,
+                    totalTaken: round(list.reduce((s: number, e: any) => s + (e.amount || 0), 0)),
+                    totalAdvances: round(advances.reduce((s: number, e: any) => s + (e.amount || 0), 0)),
+                    totalMaterialsValue: round(materials.reduce((s: number, e: any) => s + (e.amount || 0), 0)),
+                    totalItems: materials.reduce((s: number, e: any) => s + (e.quantity || 0), 0)
+                };
+            })
+        );
+
         this.actions$.pipe(ofType(LedgerActions.createLedgerSuccess), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.dialogVisible = false;
             this.resetForm();
@@ -79,6 +122,44 @@ export class EmployeeLedgerPage implements OnInit {
 
     get isSalaryAdvance(): boolean {
         return this.ledgerForm.get('type')?.value === 'SALARY_ADVANCE';
+    }
+
+    // ===== Filter handlers =====
+    private refId(value: any): string | null {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        return typeof value._id === 'string' ? value._id : null;
+    }
+
+    onEmployeeFilterChange(id: string | null): void {
+        this.filterEmployeeId = id ?? null;
+        this.employeeFilter$.next(this.filterEmployeeId);
+    }
+
+    onRangeFilterChange(range: Date[] | null): void {
+        this.filterRange = range;
+        if (!range || !range[0]) {
+            this.rangeFilter$.next(null);
+            return;
+        }
+        // Normalise to whole-day bounds. A single-day pick (end not yet chosen)
+        // filters just that day until the second date is selected.
+        const from = new Date(range[0]);
+        from.setHours(0, 0, 0, 0);
+        const end = new Date(range[1] ?? range[0]);
+        end.setHours(23, 59, 59, 999);
+        this.rangeFilter$.next({ from: from.getTime(), to: end.getTime() });
+    }
+
+    clearFilters(): void {
+        this.filterEmployeeId = null;
+        this.filterRange = null;
+        this.employeeFilter$.next(null);
+        this.rangeFilter$.next(null);
+    }
+
+    get hasActiveFilters(): boolean {
+        return !!this.filterEmployeeId || !!this.filterRange;
     }
 
     openDialog(): void {

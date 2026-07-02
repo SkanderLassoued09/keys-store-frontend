@@ -41,58 +41,70 @@
 </ng-template>
 
 <!-- MACHINE DIALOG -->
-<p-dialog [(visible)]="machineDialog" [style]="{ width: '700px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" styleClass="machine-dialog">
+<p-dialog [(visible)]="machineDialog" [style]="{ width: '94vw', maxWidth: '760px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" [draggable]="false" [dismissableMask]="true" styleClass="machine-dialog">
     <form [formGroup]="machineForm" class="machine-form" (ngSubmit)="saveMachine()">
-        <!-- Basic Information Section -->
-        <div class="form-section">
-            <label class="section-label">Informations de base</label>
-
-            <div class="form-row">
-                <div class="form-field flex-2">
-                    <label for="name">Nom <span class="required">*</span></label>
-                    <input id="name" type="text" pInputText formControlName="name" placeholder="Nom de la machine" />
-                    <small class="error-message" *ngIf="submitted && machineForm.get('name')?.invalid"> Le nom est obligatoire </small>
+        <!-- ===== Basic Information ===== -->
+        <section class="form-section">
+            <header class="section-head">
+                <span class="section-icon basic"><i class="pi pi-cog"></i></span>
+                <div class="section-head-text">
+                    <h3>Informations de base</h3>
+                    <p>Identité et photo de la machine</p>
                 </div>
-            </div>
+            </header>
 
-            <div class="form-row">
-                <div class="form-field">
-                    <label>Image</label>
-                    <div class="flex items-center gap-3">
-                        <img [src]="machineForm.value.image || fallbackImage" (error)="onImgError($event)" alt="aperçu" class="machine-thumb" />
-                        <div class="flex flex-col gap-2 flex-1">
-                            <input pInputText formControlName="image" placeholder="URL de l'image (https://...)" />
-                            <div class="flex items-center gap-2">
-                                <label class="machine-upload-btn">
-                                    <i class="pi pi-upload"></i> Téléverser
-                                    <input type="file" accept="image/*" (change)="onImageSelected($event)" hidden />
-                                </label>
-                                <p-button label="Retirer" icon="pi pi-times" severity="secondary" [text]="true" size="small" (onClick)="clearImage()" />
-                            </div>
-                        </div>
+            <!-- Image uploader -->
+            <div class="image-uploader">
+                <img [src]="machineForm.value.image || fallbackImage" (error)="onImgError($event)" alt="Aperçu de la machine" class="image-preview" />
+                <div class="image-controls">
+                    <label class="field-label">Image de la machine</label>
+                    <div class="input-with-icon">
+                        <i class="pi pi-link"></i>
+                        <input pInputText formControlName="image" placeholder="Collez une URL (https://...)" autocomplete="off" />
                     </div>
+                    <div class="image-actions">
+                        <label class="machine-upload-btn">
+                            <i class="pi pi-upload"></i> Téléverser un fichier
+                            <input type="file" accept="image/*" (change)="onImageSelected($event)" hidden />
+                        </label>
+                        <p-button label="Retirer" icon="pi pi-times" severity="secondary" [text]="true" size="small" (onClick)="clearImage()" [disabled]="!machineForm.value.image" />
+                    </div>
+                    <small class="field-hint">Collez un lien ou téléversez une image depuis votre appareil.</small>
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-field">
+            <!-- Name -->
+            <div class="field">
+                <label for="name">Nom <span class="required">*</span></label>
+                <input id="name" type="text" pInputText formControlName="name" placeholder="Ex : Duplicateur de clés X100" autocomplete="off" />
+                <small class="error-message" *ngIf="submitted && machineForm.get('name')?.invalid"> Le nom est obligatoire </small>
+            </div>
+
+            <!-- Type + Serial -->
+            <div class="field-grid">
+                <div class="field">
                     <label for="type">Type</label>
-                    <input id="type" type="text" pInputText formControlName="type" placeholder="Type de machine" />
+                    <input id="type" type="text" pInputText formControlName="type" placeholder="Ex : Duplicateur" autocomplete="off" />
                 </div>
-
-                <div class="form-field">
+                <div class="field">
                     <label for="serialNumber">N° de série</label>
-                    <input id="serialNumber" type="text" pInputText formControlName="serialNumber" placeholder="Numéro de série" />
+                    <input id="serialNumber" type="text" pInputText formControlName="serialNumber" placeholder="Ex : SN-2024-001" autocomplete="off" />
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Provider & Purchase Section -->
-        <div class="form-section">
-            <label class="section-label">Fournisseur et achat</label>
+        <!-- ===== Supplier & Purchase ===== -->
+        <section class="form-section">
+            <header class="section-head">
+                <span class="section-icon supplier"><i class="pi pi-truck"></i></span>
+                <div class="section-head-text">
+                    <h3>Fournisseur et achat</h3>
+                    <p>Provenance et date d'acquisition</p>
+                </div>
+            </header>
 
-            <div class="form-row">
-                <div class="form-field flex-2">
+            <div class="field-grid">
+                <div class="field">
                     <label for="fournisseur">Fournisseur</label>
                     <p-select
                         id="fournisseur"
@@ -104,29 +116,49 @@
                         [filter]="true"
                         filterPlaceholder="Rechercher..."
                         [showClear]="true"
+                        appendTo="body"
+                    />
+                </div>
+                <div class="field">
+                    <label for="purchaseDate">Date d'achat</label>
+                    <p-datepicker
+                        id="purchaseDate"
+                        formControlName="purchaseDate"
+                        dateFormat="dd/mm/yy"
+                        [showIcon]="true"
+                        placeholder="jj/mm/aaaa"
+                        [showButtonBar]="true"
+                        [maxDate]="today"
+                        [readonlyInput]="true"
+                        appendTo="body"
                     />
                 </div>
             </div>
+        </section>
 
-            <div class="form-row">
-                <div class="form-field">
-                    <label for="purchaseDate">Date d'achat</label>
-                    <p-datepicker id="purchaseDate" formControlName="purchaseDate" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Sélectionner une date" [showButtonBar]="true" />
+        <!-- ===== Status ===== -->
+        <section class="form-section">
+            <header class="section-head">
+                <span class="section-icon status"><i class="pi pi-flag"></i></span>
+                <div class="section-head-text">
+                    <h3>Statut</h3>
+                    <p>État opérationnel actuel</p>
                 </div>
-            </div>
-        </div>
+            </header>
 
-        <!-- Status Section -->
-        <div class="form-section">
-            <label class="section-label">Statut</label>
-
-            <div class="form-row">
-                <div class="form-field">
+            <div class="field-grid status-grid">
+                <div class="field">
                     <label for="status">Statut <span class="required">*</span></label>
-                    <p-select id="status" formControlName="status" [options]="statusOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un statut" />
+                    <p-select id="status" formControlName="status" [options]="statusOptions" optionLabel="label" optionValue="value" placeholder="Sélectionner un statut" appendTo="body" />
+                </div>
+                <div class="field">
+                    <label>Aperçu</label>
+                    <div class="status-preview">
+                        <p-tag [value]="getStatusLabel(machineForm.value.status || 'active')" [severity]="getStatusSeverity(machineForm.value.status || 'active')" />
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
     </form>
 
     <ng-template #footer>

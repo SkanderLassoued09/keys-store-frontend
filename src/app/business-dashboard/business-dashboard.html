@@ -1,0 +1,227 @@
+<!-- ===== Header ===== -->
+<div class="bi-header">
+    <div>
+        <h2 class="m-0">Tableau de bord — Business Intelligence</h2>
+        <span class="text-surface-500 text-sm">Vue stratégique : revenus, bénéfices, employés, catégories, retours</span>
+    </div>
+    <p-button icon="pi pi-refresh" label="Actualiser" severity="secondary" outlined (onClick)="reload()" />
+</div>
+
+<!-- ===== Filters ===== -->
+<div class="bi-filters">
+    <div class="quick-filters">
+        <p-button label="Aujourd'hui" size="small" [outlined]="activeFilter !== 'today'" (onClick)="setQuickFilter('today')" />
+        <p-button label="Hier" size="small" [outlined]="activeFilter !== 'yesterday'" (onClick)="setQuickFilter('yesterday')" />
+        <p-button label="Cette semaine" size="small" [outlined]="activeFilter !== 'week'" (onClick)="setQuickFilter('week')" />
+        <p-button label="Ce mois" size="small" [outlined]="activeFilter !== 'month'" (onClick)="setQuickFilter('month')" />
+    </div>
+    <div class="flex flex-col gap-1">
+        <label for="bi-period" class="font-semibold text-xs">Période personnalisée</label>
+        <p-datepicker id="bi-period" [(ngModel)]="dateRange" (ngModelChange)="onRangeChange($event)" selectionMode="range" [readonlyInput]="true" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" />
+    </div>
+</div>
+
+<!-- ===== Loading / Error ===== -->
+<div *ngIf="loading$ | async" class="bi-loading"><i class="pi pi-spin pi-spinner"></i> Chargement du tableau de bord…</div>
+<div *ngIf="error$ | async as err" class="bi-error"><i class="pi pi-exclamation-triangle"></i> {{ err }} <p-button label="Réessayer" size="small" text (onClick)="reload()" /></div>
+
+<ng-container *ngIf="!(loading$ | async) && data as d">
+    <!-- Empty state -->
+    <div *ngIf="d.kpis.totalSales === 0 && d.kpis.totalReturns === 0" class="bi-empty">
+        <i class="pi pi-chart-bar"></i>
+        <p>Aucune activité pour la période sélectionnée.</p>
+    </div>
+
+    <ng-container *ngIf="d.kpis.totalSales > 0 || d.kpis.totalReturns > 0">
+        <!-- ===== SECTION 1 — Global KPIs ===== -->
+        <div class="kpi-cards">
+            <div class="kpi-card"><span class="kpi-lbl">Chiffre d'affaires</span><span class="kpi-val">{{ d.kpis.totalRevenue | currency: 'TND' }}</span></div>
+            <div class="kpi-card"><span class="kpi-lbl">Revenu net (retours inclus)</span><span class="kpi-val">{{ d.kpis.netRevenue | currency: 'TND' }}</span></div>
+            <div class="kpi-card accent-green"><span class="kpi-lbl">Bénéfice brut</span><span class="kpi-val">{{ d.kpis.grossProfit | currency: 'TND' }}</span></div>
+            <div class="kpi-card"><span class="kpi-lbl">Coût d'achat</span><span class="kpi-val">{{ d.kpis.purchaseCost | currency: 'TND' }}</span></div>
+            <div class="kpi-card"><span class="kpi-lbl">Panier moyen</span><span class="kpi-val">{{ d.kpis.averageTicket | currency: 'TND' }}</span></div>
+            <div class="kpi-card"><span class="kpi-lbl">Nombre de ventes</span><span class="kpi-val">{{ d.kpis.totalSales }}</span></div>
+            <div class="kpi-card accent-red"><span class="kpi-lbl">Nombre de retours</span><span class="kpi-val">{{ d.kpis.totalReturns }}</span></div>
+            <div class="kpi-card"><span class="kpi-lbl">Articles vendus</span><span class="kpi-val">{{ d.kpis.articlesSold }}</span></div>
+            <div class="kpi-card"><span class="kpi-lbl">Services réalisés</span><span class="kpi-val">{{ d.kpis.servicesCompleted }}</span></div>
+            <div class="kpi-card accent-amber"><span class="kpi-lbl">Commissions versées</span><span class="kpi-val">{{ d.kpis.totalCommissions | currency: 'TND' }}</span></div>
+        </div>
+
+        <!-- ===== Charts grid ===== -->
+        <div class="bi-grid">
+            <!-- SECTION 2 — Revenue Trend -->
+            <div class="card bi-col-2">
+                <div class="bi-title">Évolution du revenu</div>
+                <p-chart type="line" [data]="revenueTrend" [options]="lineOptions" class="bi-chart" />
+            </div>
+
+            <!-- SECTION 12 — Sales Mix -->
+            <div class="card">
+                <div class="bi-title">Répartition du revenu</div>
+                <p-chart type="pie" [data]="salesMixPie" [options]="pieOptions" class="bi-chart-sm" />
+            </div>
+
+            <!-- SECTION 9 — Profit Analysis -->
+            <div class="card">
+                <div class="bi-title">Analyse du bénéfice
+                    <p-tag [value]="'Marge ' + d.kpis.profitMargin + '%'" [severity]="marginSeverity(d.kpis.profitMargin)" />
+                </div>
+                <p-chart type="bar" [data]="profitChart" [options]="barOptions" class="bi-chart-sm" />
+            </div>
+
+            <!-- SECTION 4 — Employee Ranking -->
+            <div class="card bi-col-2">
+                <div class="bi-title">
+                    Classement des employés
+                    <div class="metric-toggle">
+                        <p-button *ngFor="let m of rankMetrics" [label]="m.label" size="small" [text]="rankMetric !== m.key" (onClick)="setRankMetric(m.key)" />
+                    </div>
+                </div>
+                <p-chart type="bar" [data]="employeeRanking" [options]="hBarOptions" class="bi-chart" />
+            </div>
+
+            <!-- SECTION 5 — Commission Analytics -->
+            <div class="card bi-col-2">
+                <div class="bi-title">Commissions par employé (articles vs services)</div>
+                <p-chart type="bar" [data]="commissionStacked" [options]="stackedBarOptions" class="bi-chart" />
+            </div>
+
+            <!-- SECTION 6 — Category Performance -->
+            <div class="card bi-col-2">
+                <div class="bi-title">Performance par catégorie (revenu)</div>
+                <p-chart type="bar" [data]="categoryPerf" [options]="hBarOptions" class="bi-chart" />
+            </div>
+
+            <!-- SECTION 7 — Best Selling Articles -->
+            <div class="card bi-col-2">
+                <div class="bi-title">Top 10 articles (revenu &amp; bénéfice)</div>
+                <p-chart type="bar" [data]="bestArticlesChart" [options]="hBarOptions" class="bi-chart" />
+            </div>
+
+            <!-- SECTION 13 — Employee Revenue Breakdown -->
+            <div class="card bi-col-2">
+                <div class="bi-title">Revenu par employé (articles vs services)</div>
+                <p-chart type="bar" [data]="employeeRevenueStacked" [options]="stackedHBarOptions" class="bi-chart" />
+            </div>
+
+            <!-- SECTION 11 — Supplier Performance -->
+            <div class="card bi-col-2">
+                <div class="bi-title">Performance fournisseurs (revenu)</div>
+                <p-chart type="bar" [data]="supplierPerf" [options]="hBarOptions" class="bi-chart" />
+            </div>
+
+            <!-- SECTION 14 — Average Ticket Evolution -->
+            <div class="card bi-col-2">
+                <div class="bi-title">Évolution du panier moyen</div>
+                <p-chart type="line" [data]="avgTicketTrend" [options]="lineOptions" class="bi-chart" />
+            </div>
+
+            <!-- SECTION 10 — Returns Analysis -->
+            <div class="card">
+                <div class="bi-title">Retours : remboursements vs remplacements</div>
+                <div class="returns-kpis">
+                    <div><span class="lbl">Remboursements</span><strong>{{ d.returns.refundCount }}</strong></div>
+                    <div><span class="lbl">Remplacements</span><strong>{{ d.returns.replacementCount }}</strong></div>
+                    <div><span class="lbl">Perte</span><strong class="neg">{{ d.returns.moneyLost | currency: 'TND' }}</strong></div>
+                    <div><span class="lbl">Taux de retour</span><strong>{{ d.returns.returnRate }}%</strong></div>
+                </div>
+                <p-chart type="pie" [data]="returnsPie" [options]="pieOptions" class="bi-chart-sm" />
+            </div>
+
+            <!-- SECTION 10b — Top Returned Articles -->
+            <div class="card">
+                <div class="bi-title">Articles les plus retournés</div>
+                <p-chart *ngIf="d.returns.topArticles.length" type="bar" [data]="returnsBar" [options]="hBarOptions" class="bi-chart-sm" />
+                <div *ngIf="!d.returns.topArticles.length" class="bi-mini-empty">Aucun retour sur la période.</div>
+            </div>
+
+            <!-- SECTION 15 — Busy Hours (single-day only) -->
+            <div class="card bi-col-2" *ngIf="busyHours">
+                <div class="bi-title">Heures d'affluence (revenu par heure)</div>
+                <p-chart type="bar" [data]="busyHours" [options]="barOptions" class="bi-chart" />
+            </div>
+        </div>
+
+        <!-- ===== SECTION 3 — Employee Performance (sortable table) ===== -->
+        <div class="card">
+            <div class="bi-title">Performance détaillée des employés</div>
+            <p-table [value]="d.employees" [scrollable]="true" scrollHeight="480px" [rowHover]="true" styleClass="p-datatable-sm" [paginator]="d.employees.length > 12" [rows]="12">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th pSortableColumn="fullName">Employé <p-sortIcon field="fullName" /></th>
+                        <th pSortableColumn="articleRevenue" class="num">Rev. articles <p-sortIcon field="articleRevenue" /></th>
+                        <th pSortableColumn="serviceRevenue" class="num">Rev. services <p-sortIcon field="serviceRevenue" /></th>
+                        <th pSortableColumn="totalRevenue" class="num">Rev. total <p-sortIcon field="totalRevenue" /></th>
+                        <th pSortableColumn="articlesSold" class="num">Articles <p-sortIcon field="articlesSold" /></th>
+                        <th pSortableColumn="servicesCompleted" class="num">Services <p-sortIcon field="servicesCompleted" /></th>
+                        <th pSortableColumn="returnsProcessed" class="num">Retours <p-sortIcon field="returnsProcessed" /></th>
+                        <th pSortableColumn="articleCommission" class="num">Com. art. <p-sortIcon field="articleCommission" /></th>
+                        <th pSortableColumn="serviceCommission" class="num">Com. serv. <p-sortIcon field="serviceCommission" /></th>
+                        <th pSortableColumn="totalCommission" class="num">Com. total <p-sortIcon field="totalCommission" /></th>
+                        <th pSortableColumn="averageSale" class="num">Vente moy. <p-sortIcon field="averageSale" /></th>
+                        <th pSortableColumn="productivityScore" class="num">Productivité <p-sortIcon field="productivityScore" /></th>
+                        <th pSortableColumn="tasksCompleted" class="num">Tâches <p-sortIcon field="tasksCompleted" /></th>
+                        <th pSortableColumn="salaryAdvances" class="num">Avances <p-sortIcon field="salaryAdvances" /></th>
+                        <th pSortableColumn="materialsBorrowed" class="num">Matériel <p-sortIcon field="materialsBorrowed" /></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-e>
+                    <tr>
+                        <td>{{ e.fullName || 'Sans nom' }}</td>
+                        <td class="num">{{ e.articleRevenue | currency: 'TND' }}</td>
+                        <td class="num">{{ e.serviceRevenue | currency: 'TND' }}</td>
+                        <td class="num"><strong>{{ e.totalRevenue | currency: 'TND' }}</strong></td>
+                        <td class="num">{{ e.articlesSold }}</td>
+                        <td class="num">{{ e.servicesCompleted }}</td>
+                        <td class="num">{{ e.returnsProcessed }}</td>
+                        <td class="num">{{ e.articleCommission | currency: 'TND' }}</td>
+                        <td class="num">{{ e.serviceCommission | currency: 'TND' }}</td>
+                        <td class="num">{{ e.totalCommission | currency: 'TND' }}</td>
+                        <td class="num">{{ e.averageSale | currency: 'TND' }}</td>
+                        <td class="num">{{ e.productivityScore }}</td>
+                        <td class="num">{{ e.tasksCompleted }}</td>
+                        <td class="num">{{ e.salaryAdvances | currency: 'TND' }}</td>
+                        <td class="num">{{ e.materialsBorrowed | currency: 'TND' }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage"><tr><td colspan="15" class="text-center">Aucun employé.</td></tr></ng-template>
+            </p-table>
+        </div>
+
+        <!-- ===== SECTION 8 — Worst Selling Articles ===== -->
+        <div class="card">
+            <div class="bi-title">Articles les moins vendus (décisions d'inventaire)</div>
+            <p-table [value]="d.worstArticles" styleClass="p-datatable-sm" [rowHover]="true">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Article</th>
+                        <th class="num">Quantité vendue</th>
+                        <th class="num">Revenu</th>
+                        <th class="num">Stock magasin</th>
+                        <th class="num">Stock maison</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-a>
+                    <tr>
+                        <td>{{ a.name }}</td>
+                        <td class="num"><p-tag *ngIf="a.quantitySold === 0" value="0 vente" severity="danger" /><span *ngIf="a.quantitySold > 0">{{ a.quantitySold }}</span></td>
+                        <td class="num">{{ a.revenue | currency: 'TND' }}</td>
+                        <td class="num">{{ a.shopQuantity }}</td>
+                        <td class="num">{{ a.stockQuantity }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage"><tr><td colspan="5" class="text-center">Aucun article.</td></tr></ng-template>
+            </p-table>
+        </div>
+
+        <!-- ===== SECTION 16 — Dashboard Summary ===== -->
+        <div class="summary-cards">
+            <div class="sum-card"><span class="ico">🏆</span><span class="lbl">Meilleur employé</span><strong>{{ d.summary.bestEmployee?.name || '—' }}</strong><span class="sub">{{ (d.summary.bestEmployee?.value || 0) | currency: 'TND' }}</span></div>
+            <div class="sum-card"><span class="ico">🏆</span><span class="lbl">Meilleure catégorie</span><strong>{{ d.summary.bestCategory?.name || '—' }}</strong><span class="sub">{{ (d.summary.bestCategory?.value || 0) | currency: 'TND' }}</span></div>
+            <div class="sum-card"><span class="ico">🏆</span><span class="lbl">Meilleur article</span><strong>{{ d.summary.bestArticle?.name || '—' }}</strong><span class="sub">{{ (d.summary.bestArticle?.value || 0) | currency: 'TND' }}</span></div>
+            <div class="sum-card"><span class="ico">📈</span><span class="lbl">Meilleur jour (revenu)</span><strong>{{ d.summary.highestRevenueDay ? formatBucket(d.summary.highestRevenueDay.bucket!) : '—' }}</strong><span class="sub">{{ (d.summary.highestRevenueDay?.value || 0) | currency: 'TND' }}</span></div>
+            <div class="sum-card"><span class="ico">💰</span><span class="lbl">Meilleur jour (bénéfice)</span><strong>{{ d.summary.highestProfitDay ? formatBucket(d.summary.highestProfitDay.bucket!) : '—' }}</strong><span class="sub">{{ (d.summary.highestProfitDay?.value || 0) | currency: 'TND' }}</span></div>
+            <div class="sum-card"><span class="ico">🔄</span><span class="lbl">Taux de retour</span><strong>{{ d.summary.returnRate }}%</strong><span class="sub">{{ d.kpis.totalReturns }} retours</span></div>
+        </div>
+    </ng-container>
+</ng-container>

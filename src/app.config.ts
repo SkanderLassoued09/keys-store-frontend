@@ -1,5 +1,6 @@
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { ApplicationConfig, isDevMode } from '@angular/core';
+import { authInterceptor } from '@/core/auth.interceptor';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
 import Aura from '@primeuix/themes/aura';
@@ -23,6 +24,7 @@ import * as SubCategoryEffects from '../src/app/store/sub-category-store/sub-cat
 import * as EmployeeLedgerEffects from '../src/app/store/employee-ledger-store/employee-ledger.effects';
 import * as WorkTaskEffects from '../src/app/store/work-task-store/work-task.effects';
 import * as EmployeeDashboardEffects from '../src/app/store/employee-dashboard-store/employee-dashboard.effects';
+import * as BusinessDashboardEffects from '../src/app/store/business-dashboard-store/business-dashboard.effects';
 import { clientReducer } from '@/store/client-store/client.reducer';
 import { employeeReducer } from '@/store/employee-store/employee.reducer';
 import { providerReducer } from '@/store/provider-store/provider.reducer';
@@ -37,16 +39,17 @@ import { subCategoryReducer } from '@/store/sub-category-store/sub-category.redu
 import { employeeLedgerReducer } from '@/store/employee-ledger-store/employee-ledger.reducer';
 import { workTaskReducer } from '@/store/work-task-store/work-task.reducer';
 import { employeeDashboardReducer } from '@/store/employee-dashboard-store/employee-dashboard.reducer';
+import { businessDashboardReducer } from '@/store/business-dashboard-store/business-dashboard.reducer';
 
 export const appConfig: ApplicationConfig = {
     providers: [
         provideRouter(appRoutes, withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }), withEnabledBlockingInitialNavigation()),
-        provideHttpClient(withFetch()),
+        provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
         provideAnimationsAsync(),
         MessageService,
         providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
-        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer, stockTransfer: stockTransferReducer, settings: settingsReducer, articleReturn: articleReturnReducer, category: categoryReducer, subCategory: subCategoryReducer, employeeLedger: employeeLedgerReducer, workTask: workTaskReducer, employeeDashboard: employeeDashboardReducer }),
-        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects, StockTransferEffects, SettingsEffects, ArticleReturnEffects, CategoryEffects, SubCategoryEffects, EmployeeLedgerEffects, WorkTaskEffects, EmployeeDashboardEffects),
+        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer, stockTransfer: stockTransferReducer, settings: settingsReducer, articleReturn: articleReturnReducer, category: categoryReducer, subCategory: subCategoryReducer, employeeLedger: employeeLedgerReducer, workTask: workTaskReducer, employeeDashboard: employeeDashboardReducer, businessDashboard: businessDashboardReducer }),
+        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects, StockTransferEffects, SettingsEffects, ArticleReturnEffects, CategoryEffects, SubCategoryEffects, EmployeeLedgerEffects, WorkTaskEffects, EmployeeDashboardEffects, BusinessDashboardEffects),
         provideStoreDevtools({ maxAge: 25 })
     ]
 };
