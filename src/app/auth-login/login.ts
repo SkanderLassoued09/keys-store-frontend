@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -44,10 +45,21 @@ export class LoginPage {
                 const target = res.user.role === 'employee' ? '/order-service' : redirect && !redirect.startsWith('/login') ? redirect : '/';
                 this.router.navigateByUrl(target);
             },
-            error: (err) => {
+            error: (err: HttpErrorResponse) => {
                 this.loading = false;
-                this.error = err?.error?.message || 'Connexion échouée. Vérifiez vos identifiants.';
+                this.error = this.messageForError(err);
             }
         });
+    }
+
+    // Distinguish the failure modes so the user gets an accurate message instead
+    // of the raw "Failed to fetch". Angular's withFetch surfaces a network
+    // failure (server unreachable, CORS, wrong host) as status 0.
+    private messageForError(err: HttpErrorResponse): string {
+        if (err.status === 0) return 'Serveur injoignable. Vérifiez votre connexion.';
+        if (err.status === 401) return 'Identifiants incorrects.';
+        if (err.status >= 500) return 'Erreur serveur. Réessayez plus tard.';
+        // 400 / others: prefer the backend's message when it sent one.
+        return err?.error?.message || 'Connexion échouée. Réessayez.';
     }
 }
