@@ -7,10 +7,8 @@ import { Employee } from '@/employee/employee';
 import { Provider } from '@/provider/provider';
 import { Client } from '@/client/client';
 import { OrderList } from '@/order-service-list/order-service-list';
-import { MachineList } from '@/machine/machine';
 import { ArticleReturn } from '@/article-return/article-return';
 import { CategoryPage } from '@/category/category';
-import { SubCategoryPage } from '@/sub-category/sub-category';
 import { EmployeeLedgerPage } from '@/employee-ledger/employee-ledger';
 import { WorkTaskPage } from '@/work-task/work-task';
 import { EmployeeDashboard } from '@/employee-dashboard/employee-dashboard';
@@ -26,11 +24,10 @@ export default [
     { path: 'employee', component: Employee },
     { path: 'provider', component: Provider },
     { path: 'client', component: Client },
-    { path: 'machine', component: MachineList },
     { path: 'order-service-list', component: OrderList, canActivate: [adminGuard] },
     { path: 'article-return', component: ArticleReturn },
     { path: 'category', component: CategoryPage },
-    { path: 'sub-category', component: SubCategoryPage },
+    { path: 'sub-category', redirectTo: 'category' },
     { path: 'employee-dashboard', component: EmployeeDashboard, canActivate: [adminGuard] },
     { path: 'business-dashboard', component: BusinessDashboard, canActivate: [adminGuard] },
     { path: 'users', component: UsersPage, canActivate: [adminGuard] },

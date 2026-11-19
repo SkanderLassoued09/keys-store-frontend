@@ -5,7 +5,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { Dialog } from 'primeng/dialog';
-import { FileUpload } from 'primeng/fileupload';
+import { DocumentsDialog } from '../documents/documents-dialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -23,12 +23,21 @@ import * as ProviderSelectors from '../store/provider-store/provider.selectors';
 @Component({
     selector: 'app-provider',
     standalone: true,
-    imports: [TableModule, Dialog, SelectModule, ToastModule, ToolbarModule, ConfirmDialog, InputTextModule, TextareaModule, CommonModule, FileUpload, FormsModule, IconFieldModule, InputIconModule, Button, ReactiveFormsModule, DialogModule],
+    imports: [TableModule, Dialog, SelectModule, ToastModule, ToolbarModule, ConfirmDialog, InputTextModule, TextareaModule, CommonModule, DocumentsDialog, FormsModule, IconFieldModule, InputIconModule, Button, ReactiveFormsModule, DialogModule],
     providers: [MessageService, ConfirmationService],
     templateUrl: './provider.html',
     styleUrl: './provider.scss'
 })
 export class Provider {
+    // BL / BC / invoice tracking dialog (the only provider feature besides contact info).
+    documentsVisible = false;
+    documentsOwner: { id: string; name: string } | null = null;
+
+    openDocuments(row: any) {
+        this.documentsOwner = { id: row._id, name: row.name ?? '' };
+        this.documentsVisible = true;
+    }
+
     // Dialog state
     providerDialog: boolean = false;
     submitted: boolean = false;

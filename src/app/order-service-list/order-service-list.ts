@@ -24,14 +24,10 @@ import { map } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 import * as OrderActions from '../store/order-service-store/order.service.actions';
 import * as OrderSelectors from '../store/order-service-store/order.service.selectors';
-import * as ClientSelectors from '../store/client-store/client.selectors';
-import * as ClientActions from '../store/client-store/client.actions';
 import * as SettingsActions from '../store/settings-store/settings.actions';
 import * as SettingsSelectors from '../store/settings-store/settings.selectors';
 import { displayEmployee, refId, WorkOrder } from '../store/order-service-store/work-order.model';
 // import * as EmployeeActions from '../store/employee-store/employee.actions';
-// import * as MachineSelectors from '../store/machine-store/machine.selectors';
-// import * as MachineActions from '../store/machine-store/machine.actions';
 
 @Component({
     selector: 'app-order-list',
@@ -73,6 +69,7 @@ export class OrderList {
     // Commission modal (global service commission % — replaces the old page).
     commissionDialog: boolean = false;
     commissionForm = new FormGroup({
+        articleCommissionPercent: new FormControl<number | null>(0, [Validators.required, Validators.min(0)]),
         serviceCommissionPercent: new FormControl<number | null>(0, [Validators.required, Validators.min(0)])
     });
     commissionSaving$: Observable<boolean>;
@@ -93,8 +90,6 @@ export class OrderList {
         price: new FormControl<number | null>(null, Validators.required),
         duration: new FormControl<number | null>(null),
         employee: new FormControl(''),
-        client: new FormControl('', Validators.required),
-        machine: new FormControl<string | null>(null),
         status: new FormControl('pending', Validators.required)
     });
 
@@ -102,9 +97,7 @@ export class OrderList {
     order$: Observable<WorkOrder[]>;
     loading$: Observable<boolean>;
     error$: Observable<string | null>;
-    client$: Observable<any[]> | undefined;
     employee$: Observable<any[]> | undefined;
-    machine$: Observable<any[]> | undefined;
     // Financial-view aggregates (computed from the date-filtered order list).
     totalRevenue$: Observable<number>;
     salesCount$: Observable<number>;
@@ -135,16 +128,14 @@ export class OrderList {
         this.averageTicket$ = this.order$.pipe(map((orders) => OrderSelectors.averageTicket(orders)));
         this.loading$ = this.store.select(OrderSelectors.selectOrderLoading);
         this.error$ = this.store.select(OrderSelectors.selectOrderError);
-        this.client$ = this.store.select(ClientSelectors.selectClientFromDropdown);
         this.commissionSaving$ = this.store.select(SettingsSelectors.selectSettingsSaving);
         // this.employee$ = this.store.select(EmployeeSelectors.selectEmployeeFromDropdown);
-        // this.machine$ = this.store.select(MachineSelectors.selectMachineFromDropdown);
 
         // Keep the commission form in sync with the loaded settings.
         this.store
-            .select(SettingsSelectors.selectServiceCommissionPercent)
+            .select(SettingsSelectors.selectSettings)
             .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe((percent) => this.commissionForm.patchValue({ serviceCommissionPercent: Number(percent ?? 0) }, { emitEvent: false }));
+            .subscribe((s) => this.commissionForm.patchValue({ articleCommissionPercent: Number(s?.articleCommissionPercent ?? 0), serviceCommissionPercent: Number(s?.serviceCommissionPercent ?? 0) }, { emitEvent: false }));
     }
 
     // ===== Commission employé modal =====
@@ -162,7 +153,10 @@ export class OrderList {
         if (this.commissionForm.invalid) return;
         this.store.dispatch(
             SettingsActions.updateSettings({
-                settings: { serviceCommissionPercent: Number(this.commissionForm.value.serviceCommissionPercent ?? 0) }
+                settings: {
+                    articleCommissionPercent: Number(this.commissionForm.value.articleCommissionPercent ?? 0),
+                    serviceCommissionPercent: Number(this.commissionForm.value.serviceCommissionPercent ?? 0)
+                }
             })
         );
         this.commissionDialog = false;
@@ -206,9 +200,7 @@ export class OrderList {
 
     ngOnInit() {
         this.applyRange(this.dateRange[0], this.dateRange[1]);
-        this.store.dispatch(ClientActions.loadClient());
         // this.store.dispatch(EmployeeActions.loadEmployee());
-        // this.store.dispatch(MachineActions.loadMachine());
     }
 
     // Open dialog for creating new order
@@ -217,7 +209,6 @@ export class OrderList {
         this.currentOrderId = null;
         this.orderForm.reset({
             status: 'pending',
-            machine: null,
             duration: null
         });
         this.submitted = false;
@@ -235,8 +226,6 @@ export class OrderList {
             price: order.price,
             duration: order.duration,
             employee: refId(order.employee) ?? '',
-            client: refId(order.client) ?? '',
-            machine: refId(order.machine),
             status: order.status
         });
 
@@ -291,7 +280,6 @@ export class OrderList {
         this.currentOrderId = null;
         this.orderForm.reset({
             status: 'pending',
-            machine: null,
             duration: null
         });
     }

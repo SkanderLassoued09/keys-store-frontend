@@ -9,6 +9,16 @@ export class ArticleService {
 
     constructor(private readonly httpClient: HttpClient) {}
 
+    /** Several models of one family in one request (e.g. VAC1 … VAC33). */
+    createMany(articles: any[]): Observable<any[]> {
+        return this.httpClient.post<any[]>(`${this.baseUrl}/bulk`, { articles });
+    }
+
+    /** Same purchase/selling price on every article of a family. */
+    setFamilyPrices(family: string, purchasePrice: number, sellingPrice: number): Observable<{ matched: number; modified: number }> {
+        return this.httpClient.patch<{ matched: number; modified: number }>(`${this.baseUrl}/family-prices`, { family, purchasePrice, sellingPrice });
+    }
+
     createArticle(article: any): Observable<any> {
         console.log(article);
         return this.httpClient.post<any>(this.baseUrl, article);

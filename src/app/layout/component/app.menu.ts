@@ -70,10 +70,6 @@ export class AppMenu implements OnInit {
                 items: [{ label: 'List Client', icon: 'pi pi-fw pi-home', routerLink: ['/pages/client'] }]
             },
             {
-                label: 'Machine',
-                items: [{ label: 'List machine', icon: 'pi pi-fw pi-home', routerLink: ['/pages/machine'] }]
-            },
-            {
                 label: 'Service',
                 items: [
                     { label: 'Inventory Interface', icon: 'pi pi-fw pi-home', routerLink: ['/pages/order-service-list'] },
@@ -89,8 +85,7 @@ export class AppMenu implements OnInit {
                 label: 'Paramètres',
                 items: [
                     { label: 'Utilisateurs & accès', icon: 'pi pi-fw pi-users', routerLink: ['/pages/users'] },
-                    { label: 'Catégories', icon: 'pi pi-fw pi-images', routerLink: ['/pages/category'] },
-                    { label: 'Sous-catégories', icon: 'pi pi-fw pi-sitemap', routerLink: ['/pages/sub-category'] }
+                    { label: 'Catégories & sous-catégories', icon: 'pi pi-fw pi-images', routerLink: ['/pages/category'] }
                 ]
             }
         ];

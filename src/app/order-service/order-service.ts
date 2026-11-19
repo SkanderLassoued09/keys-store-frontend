@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { RoleService } from '@/layout/service/role.service';
@@ -13,6 +13,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { displayEmployee, displayWorkOrderType, WorkOrder } from '../store/order-service-store/work-order.model';
 import * as OrderServiceSelectors from '../store/order-service-store/order.service.selectors';
 import { ArticleReturn } from '../article-return/article-return';
+import { WorkTaskPage } from '../work-task/work-task';
 
 // PrimeNG Imports
 import { ButtonModule } from 'primeng/button';
@@ -43,8 +44,6 @@ import * as CategoryActions from '../store/category-store/category.actions';
 import * as CategorySelectors from '../store/category-store/category.selectors';
 import * as SubCategoryActions from '../store/sub-category-store/sub-category.actions';
 import * as SubCategorySelectors from '../store/sub-category-store/sub-category.selectors';
-import * as ClientActions from '../store/client-store/client.actions';
-import * as ClientSelectors from '../store/client-store/client.selectors';
 
 @Component({
     selector: 'app-inventory-work',
@@ -69,7 +68,8 @@ import * as ClientSelectors from '../store/client-store/client.selectors';
         ConfirmDialogModule,
         TooltipModule,
         TextareaModule,
-        ArticleReturn
+        ArticleReturn,
+        WorkTaskPage
     ],
     providers: [MessageService, ConfirmationService],
     templateUrl: './order-service.html',
@@ -109,27 +109,15 @@ export class OrderService implements OnInit {
         description: new FormControl(''),
         employee: new FormControl('', Validators.required),
         duration: new FormControl(15, [Validators.required, Validators.min(1)]),
-        price: new FormControl<number | null>(null, [Validators.required, Validators.min(0)]),
-        // Optional link to a registered client. Empty = walk-in sale.
-        client: new FormControl<string | null>('')
+        price: new FormControl<number | null>(null, [Validators.required, Validators.min(0)])
     });
 
     // Today's confirmed article sales dialog state.
     todayIncomeDialogVisible: boolean = false;
 
-    // Embedded returns component — lets the prominent Shop Interface "Nouveau
-    // Retour" button open its dialog directly.
-    @ViewChild(ArticleReturn) private readonly articleReturnCmp?: ArticleReturn;
-
-    openReturnDialog(): void {
-        this.articleReturnCmp?.openDialog();
-    }
-
-    // Direct access to the task board from the shop UI (same target the
-    // employee dashboard routes to — keeps navigation consistent).
-    openTaskBoard(): void {
-        this.router.navigate(['/pages/work-task']);
-    }
+    // Returns and task board open as modals inside the shop (no navigation).
+    returnsVisible = false;
+    taskBoardVisible = false;
 
     // ===== Interface separation helpers =====
     get isOwner(): boolean {
@@ -163,9 +151,7 @@ export class OrderService implements OnInit {
     selectedArticleForm = new FormGroup({
         quantity: new FormControl(1, [Validators.required, Validators.min(1)]),
         employee: new FormControl('', Validators.required),
-        customerName: new FormControl(''),
-        // Optional link to a registered client. Empty = walk-in sale.
-        client: new FormControl<string | null>('')
+        customerName: new FormControl('')
     });
 
     readonly serviceCategoryOptions = [
@@ -191,11 +177,12 @@ export class OrderService implements OnInit {
     articles$: Observable<any[]>;
     featuredForType$: Observable<any[]>;
     filteredArticles$: Observable<any[]>;
+    // Same articles, one section per family (UL, VAC…); no-family ones last.
+    familyGroups$: Observable<{ family: string; articles: any[] }[]>;
     categories$: Observable<any[]>;
     loading$: Observable<boolean>;
     error$: Observable<string | null>;
     employee$: Observable<any[]>;
-    clients$: Observable<any[]>;
     types$: Observable<any[]>;
     todayOrders$: Observable<WorkOrder[]>;
     todayRevenue$: Observable<number>;
@@ -215,7 +202,6 @@ export class OrderService implements OnInit {
         this.loading$ = this.store.select(ArticleSelectors.selectArticleLoading);
         this.error$ = this.store.select(ArticleSelectors.selectArticleError);
         this.employee$ = this.store.select(EmployeeSelectors.selectEmployeeDropdown);
-        this.clients$ = this.store.select(ClientSelectors.selectClientFromDropdown);
         this.types$ = this.store.select(selectUniqueTypes);
         this.todayOrders$ = this.store.select(OrderServiceSelectors.selectTodayConfirmedOrders);
         this.todayRevenue$ = this.store.select(OrderServiceSelectors.selectTodayConfirmedRevenue);
@@ -236,11 +222,24 @@ export class OrderService implements OnInit {
                     if (categoryId && this.refId(a?.category) !== categoryId) return false;
                     if (subCategoryId && this.refId(a?.subCategory) !== subCategoryId) return false;
                     if (term) {
-                        const hay = `${a?.name ?? ''} ${a?.reference ?? ''}`.toLowerCase();
+                        const hay = `${a?.family ?? ''} ${a?.name ?? ''} ${a?.reference ?? ''}`.toLowerCase();
                         if (!hay.includes(term)) return false;
                     }
                     return true;
                 });
+            })
+        );
+        this.familyGroups$ = this.filteredArticles$.pipe(
+            map((articles) => {
+                const groups = new Map<string, any[]>();
+                for (const a of articles) {
+                    const f = (a?.family ?? '').trim();
+                    groups.set(f, [...(groups.get(f) ?? []), a]);
+                }
+                const byModel = (x: any, y: any) => String(x?.name ?? '').localeCompare(String(y?.name ?? ''), undefined, { numeric: true });
+                return [...groups.entries()]
+                    .sort(([a], [b]) => (a ? (b ? a.localeCompare(b) : -1) : 1))
+                    .map(([family, list]) => ({ family, articles: list.sort(byModel) }));
             })
         );
     }
@@ -256,12 +255,16 @@ export class OrderService implements OnInit {
         this.store.dispatch(EmployeeActions.loadEmployee());
         this.store.dispatch(CategoryActions.loadCategories());
         this.store.dispatch(SubCategoryActions.loadSubCategories({}));
-        // Optional client selector for sales — load the client list once.
-        this.store.dispatch(ClientActions.loadClient());
 
         // Keep local copies of categories/sub-categories for filtering + images.
-        this.store.select(CategorySelectors.selectActiveCategories).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((list) => (this.allCategories = list));
-        this.store.select(SubCategorySelectors.selectAllSubCategories).pipe(takeUntilDestroyed(this.destroyRef)).subscribe((list) => (this.allSubCategories = list));
+        this.store
+            .select(CategorySelectors.selectActiveCategories)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((list) => (this.allCategories = list));
+        this.store
+            .select(SubCategorySelectors.selectAllSubCategories)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((list) => (this.allSubCategories = list));
 
         this.loadRecentArticles();
 
@@ -276,14 +279,12 @@ export class OrderService implements OnInit {
         // Cart lifecycle is bound to the bulk-save outcome:
         //  - SUCCESS  → backend confirmed everything, stock decremented → clear cart
         //  - FAILURE  → keep cart so the user can fix and retry (toast comes from the effect)
-        this.actions$
-            .pipe(ofType(OrderServiceActions.createMultipleOrderServicesSuccess), takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => {
-                this.selectedArticlesFormArray.clear();
-                this.clearLocalStorage();
-                this.calculateStats();
-                this.isSaving = false;
-            });
+        this.actions$.pipe(ofType(OrderServiceActions.createMultipleOrderServicesSuccess), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+            this.selectedArticlesFormArray.clear();
+            this.clearLocalStorage();
+            this.calculateStats();
+            this.isSaving = false;
+        });
 
         this.actions$.pipe(ofType(OrderServiceActions.createMultipleOrderServicesFailure), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.isSaving = false;
@@ -367,8 +368,6 @@ export class OrderService implements OnInit {
             employee: new FormControl(article.employee || '', Validators.required),
             employeeName: new FormControl(article.employeeName || ''),
             customerName: new FormControl(article.customerName || '', this.isCarKeyType(article.type) ? Validators.required : []),
-            // Optional registered-client link (walk-in sale if empty).
-            client: new FormControl(article.client || ''),
             duration: new FormControl(article.duration || 0, Validators.min(0)),
             stockQuantity: new FormControl(availableStock),
             shopQuantity: new FormControl(article.shopQuantity ?? availableStock),
@@ -476,8 +475,7 @@ export class OrderService implements OnInit {
             description: '',
             employee: '',
             duration: 15,
-            price: null,
-            client: ''
+            price: null
         });
         this.serviceModalVisible = true;
     }
@@ -495,7 +493,7 @@ export class OrderService implements OnInit {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Validation',
-                detail: 'Veuillez remplir le titre, la catégorie, l\'employé, le temps et le prix.',
+                detail: "Veuillez remplir le titre, la catégorie, l'employé, le temps et le prix.",
                 life: 3000
             });
             return;
@@ -508,8 +506,7 @@ export class OrderService implements OnInit {
             description: v.description,
             employee: v.employee,
             duration: v.duration,
-            price: v.price,
-            client: v.client
+            price: v.price
         });
         this.selectedArticlesFormArray.push(formGroup);
 
@@ -539,8 +536,6 @@ export class OrderService implements OnInit {
             quantity: new FormControl(1, [Validators.required, Validators.min(1)]),
             employee: new FormControl(service.employee || '', Validators.required),
             employeeName: new FormControl(''),
-            // Optional registered-client link (walk-in sale if empty).
-            client: new FormControl(service.client || ''),
             duration: new FormControl(service.duration || 15, [Validators.required, Validators.min(0)]),
             stockQuantity: new FormControl(null),
             sellingPrice: new FormControl(0),
@@ -588,8 +583,7 @@ export class OrderService implements OnInit {
         this.selectedArticleForm.reset({
             quantity: 1,
             employee: '',
-            customerName: '',
-            client: ''
+            customerName: ''
         });
 
         this.visible = true;
@@ -602,8 +596,7 @@ export class OrderService implements OnInit {
         this.selectedArticleForm.reset({
             quantity: 1,
             employee: '',
-            customerName: '',
-            client: ''
+            customerName: ''
         });
     }
 
@@ -672,7 +665,6 @@ export class OrderService implements OnInit {
             employee: formValues.employee || '', // ✅ CRITICAL: Employee ID
             employeeName: employee?.name || '', // ✅ CRITICAL: Employee Name
             customerName: formValues.customerName?.trim() || '',
-            client: formValues.client || '', // Optional registered-client link
             duration: 0,
             stockQuantity: this.articleSelectedForModal.shopQuantity ?? 0,
             shopQuantity: this.articleSelectedForModal.shopQuantity ?? 0,
@@ -822,11 +814,7 @@ export class OrderService implements OnInit {
                 // entries leave it null so the backend default applies.
                 article: isService ? null : value.id,
                 ...(isService ? { category: value.category } : {}),
-                ...(!isService && value.customerName ? { customerName: String(value.customerName).trim() } : {}),
-                // Optional client link — only sent when one is selected, so the
-                // backend never tries to cast an empty string to an ObjectId.
-                // Omitted → sale is created normally as a walk-in.
-                ...(value.client ? { client: value.client } : {})
+                ...(!isService && value.customerName ? { customerName: String(value.customerName).trim() } : {})
             };
         });
 

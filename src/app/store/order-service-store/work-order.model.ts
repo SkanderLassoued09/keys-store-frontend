@@ -15,11 +15,6 @@ export interface ClientRef {
     name?: string;
 }
 
-export interface MachineRef {
-    _id: string;
-    name?: string;
-}
-
 // A WorkOrder ref field arrives as either a populated object (list/findOne) or
 // a raw ObjectId string (after a fresh create). Templates and form patches must
 // handle both shapes — use refId() / displayEmployee() helpers.
@@ -39,7 +34,6 @@ export interface WorkOrder {
     article?: Ref<{ _id: string; name?: string }>;
     employee?: Ref<EmployeeRef>;
     client?: Ref<ClientRef>;
-    machine?: Ref<MachineRef>;
     status?: WorkOrderStatus;
     refunded?: boolean;
     refundedAt?: string;
@@ -71,11 +65,6 @@ export function displayWorkOrderType(value: WorkOrder | undefined): string {
 }
 
 export function displayClient(value: Ref<ClientRef> | undefined): string {
-    if (!value || typeof value === 'string') return '-';
-    return value.name?.trim() || '-';
-}
-
-export function displayMachine(value: Ref<MachineRef> | undefined): string {
     if (!value || typeof value === 'string') return '-';
     return value.name?.trim() || '-';
 }

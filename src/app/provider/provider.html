@@ -2,10 +2,6 @@
     <ng-template #start>
         <p-button label="Nouveau" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
     </ng-template>
-
-    <ng-template #end>
-        <p-fileUpload mode="basic" accept="image/*" [maxFileSize]="1000000" label="Import" chooseLabel="Import" auto customUpload class="mr-2 inline-block" [chooseButtonProps]="{ severity: 'secondary' }" />
-    </ng-template>
 </p-toolbar>
 
 <p-table
@@ -50,6 +46,7 @@
             <td>{{ item.phone || '-' }}</td>
             <td>{{ item.address || '-' }}</td>
             <td>
+                <p-button icon="pi pi-folder-open" [text]="true" [rounded]="true" severity="help" (click)="openDocuments(item)" pTooltip="Documents (BL, BC, factures)" />
                 <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" (click)="editProvider(item)" pTooltip="Modifier" />
                 <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteProvider(item)" pTooltip="Supprimer" />
             </td>
@@ -120,3 +117,5 @@
 
 <p-toast />
 <p-confirmDialog [style]="{ width: '450px' }" />
+
+<app-documents-dialog [(visible)]="documentsVisible" ownerType="provider" [ownerId]="documentsOwner?.id ?? null" [ownerName]="documentsOwner?.name ?? ''" />

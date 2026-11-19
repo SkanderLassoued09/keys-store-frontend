@@ -5,6 +5,7 @@ import { API_CONFIG } from 'src/api.config';
 
 export interface AppSettings {
     serviceCommissionPercent: number;
+    articleCommissionPercent: number;
 }
 
 @Injectable({ providedIn: 'root' })

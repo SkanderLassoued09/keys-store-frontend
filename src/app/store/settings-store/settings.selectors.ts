@@ -6,4 +6,3 @@ export const selectSettings = createSelector(selectSettingsState, (state) => sta
 export const selectSettingsLoading = createSelector(selectSettingsState, (state) => state.loading);
 export const selectSettingsSaving = createSelector(selectSettingsState, (state) => state.saving);
 export const selectSettingsError = createSelector(selectSettingsState, (state) => state.error);
-export const selectServiceCommissionPercent = createSelector(selectSettings, (settings) => Number(settings?.serviceCommissionPercent ?? 0));

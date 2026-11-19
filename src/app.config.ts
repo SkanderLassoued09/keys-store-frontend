@@ -12,7 +12,6 @@ import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { articleReducer } from '@/store/article-store/article.reducer';
 import * as ArticleEffects from '../src/app/store/article-store/article.effects';
 import * as ClientEffects from '../src/app/store/client-store/client.effects';
-import * as MachineEffects from '../src/app/store/machine-store/machine.effects';
 import * as ProviderEffects from '../src/app/store/provider-store/provider.effects';
 import * as EmployeeEffects from '../src/app/store/employee-store/employee.effects';
 import * as OrderServiceEffects from '../src/app/store/order-service-store/order.service.effects';
@@ -30,7 +29,6 @@ import { employeeReducer } from '@/store/employee-store/employee.reducer';
 import { providerReducer } from '@/store/provider-store/provider.reducer';
 import { MessageService } from 'primeng/api';
 import { orderReducer } from '@/store/order-service-store/order.service.reducer';
-import { machineReducer } from '@/store/machine-store/machine.reducer';
 import { stockTransferReducer } from '@/store/stock-transfer-store/stock-transfer.reducer';
 import { settingsReducer } from '@/store/settings-store/settings.reducer';
 import { articleReturnReducer } from '@/store/article-return-store/article-return.reducer';
@@ -48,8 +46,38 @@ export const appConfig: ApplicationConfig = {
         provideAnimationsAsync(),
         MessageService,
         providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
-        provideStore({ article: articleReducer, client: clientReducer, employee: employeeReducer, provider: providerReducer, order: orderReducer, machine: machineReducer, stockTransfer: stockTransferReducer, settings: settingsReducer, articleReturn: articleReturnReducer, category: categoryReducer, subCategory: subCategoryReducer, employeeLedger: employeeLedgerReducer, workTask: workTaskReducer, employeeDashboard: employeeDashboardReducer, businessDashboard: businessDashboardReducer }),
-        provideEffects(ArticleEffects, ClientEffects, ProviderEffects, EmployeeEffects, OrderServiceEffects, MachineEffects, StockTransferEffects, SettingsEffects, ArticleReturnEffects, CategoryEffects, SubCategoryEffects, EmployeeLedgerEffects, WorkTaskEffects, EmployeeDashboardEffects, BusinessDashboardEffects),
+        provideStore({
+            article: articleReducer,
+            client: clientReducer,
+            employee: employeeReducer,
+            provider: providerReducer,
+            order: orderReducer,
+            stockTransfer: stockTransferReducer,
+            settings: settingsReducer,
+            articleReturn: articleReturnReducer,
+            category: categoryReducer,
+            subCategory: subCategoryReducer,
+            employeeLedger: employeeLedgerReducer,
+            workTask: workTaskReducer,
+            employeeDashboard: employeeDashboardReducer,
+            businessDashboard: businessDashboardReducer
+        }),
+        provideEffects(
+            ArticleEffects,
+            ClientEffects,
+            ProviderEffects,
+            EmployeeEffects,
+            OrderServiceEffects,
+            StockTransferEffects,
+            SettingsEffects,
+            ArticleReturnEffects,
+            CategoryEffects,
+            SubCategoryEffects,
+            EmployeeLedgerEffects,
+            WorkTaskEffects,
+            EmployeeDashboardEffects,
+            BusinessDashboardEffects
+        ),
         provideStoreDevtools({ maxAge: 25 })
     ]
 };

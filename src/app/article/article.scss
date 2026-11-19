@@ -253,3 +253,71 @@
     }
 }
 
+
+// ===== Nom de famille / multi-model creation =====
+.field-hint {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--p-text-muted-color);
+}
+
+.variant-preview {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px dashed var(--p-primary-300, #86efac);
+    background: var(--p-primary-50, #f0fdf4);
+
+    .variant-preview-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--p-primary-700, #15803d);
+        margin-bottom: 0.5rem;
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+    }
+}
+
+.variant-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.variant-chip {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: var(--p-content-background, #fff);
+    border: 1px solid var(--p-content-border-color, #e5e7eb);
+
+    &.more {
+        font-style: italic;
+    }
+}
+
+.family-prices {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+}
+
+:host ::ng-deep .family-row td {
+    background: var(--p-content-hover-background, #f8fafc);
+    font-size: 0.85rem;
+
+    .pi-folder {
+        margin-right: 0.4rem;
+        color: var(--p-primary-color);
+    }
+
+    .family-count {
+        margin-left: 0.6rem;
+        color: var(--p-text-muted-color);
+        font-size: 0.75rem;
+    }
+}

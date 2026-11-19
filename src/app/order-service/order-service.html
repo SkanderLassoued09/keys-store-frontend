@@ -3,8 +3,8 @@
     <h2>Shop Interface</h2>
 
     <div class="header-actions flex flex-wrap items-center gap-2 sm:gap-3">
-        <p-button label="Tableau des tâches" icon="pi pi-check-square" severity="info" [outlined]="true" (onClick)="openTaskBoard()" />
-        <p-button label="Nouveau Retour" icon="pi pi-undo" severity="warn" (onClick)="openReturnDialog()" />
+        <p-button label="Tableau des tâches" icon="pi pi-check-square" severity="info" [outlined]="true" (onClick)="taskBoardVisible = true" />
+        <p-button label="Retours" icon="pi pi-undo" severity="warn" (onClick)="returnsVisible = true" />
         <p-button *ngIf="isOwner" label="Interface Admin" icon="pi pi-th-large" severity="secondary" (onClick)="backToAdmin()" />
         <p-button label="Déconnexion" icon="pi pi-sign-out" severity="secondary" [text]="true" (onClick)="logout()" />
     </div>
@@ -72,20 +72,27 @@
                 <button *ngFor="let sub of subCategoriesForSelected" class="subcat-chip" [class.active]="selectedSubCategoryId === sub._id" (click)="selectSubCategory(sub._id)">{{ sub.name }}</button>
             </div>
 
-            <div class="article-grid">
-                <div class="article-card" *ngFor="let article of (filteredArticles$ | async) || []">
-                    <i *ngIf="article.featured" class="pi pi-star-fill article-fav"></i>
-                    <img [src]="categoryImageFor(article)" (error)="onImgError($event)" alt="{{ article.name }}" class="article-card-img" />
-                    <strong class="article-card-name">{{ article.name }}</strong>
-                    <small class="article-card-ref">{{ article.reference || '—' }}</small>
-                    <span class="article-card-stock" [class.green]="(article.shopQuantity ?? 0) >= 20" [class.red]="(article.shopQuantity ?? 0) < 20"> Stock: {{ article.shopQuantity ?? 0 }} </span>
-                    <button class="btn-add" (click)="addArticle(article)" [disabled]="(article.shopQuantity ?? 0) <= 0">Ajouter</button>
+            <ng-container *ngFor="let group of (familyGroups$ | async) || []">
+                <div class="family-header" *ngIf="group.family || (familyGroups$ | async)!.length > 1">
+                    <i class="pi pi-folder"></i>
+                    <span>{{ group.family || 'Autres' }}</span>
+                    <small>{{ group.articles.length }}</small>
                 </div>
+                <div class="article-grid">
+                    <div class="article-card" *ngFor="let article of group.articles">
+                        <i *ngIf="article.featured" class="pi pi-star-fill article-fav"></i>
+                        <img [src]="categoryImageFor(article)" (error)="onImgError($event)" alt="{{ article.name }}" class="article-card-img" />
+                        <strong class="article-card-name">{{ article.name }}</strong>
+                        <small class="article-card-ref">{{ article.reference || '—' }}</small>
+                        <span class="article-card-stock" [class.green]="(article.shopQuantity ?? 0) >= 20" [class.red]="(article.shopQuantity ?? 0) < 20"> Stock: {{ article.shopQuantity ?? 0 }} </span>
+                        <button class="btn-add" (click)="addArticle(article)" [disabled]="(article.shopQuantity ?? 0) <= 0">Ajouter</button>
+                    </div>
+                </div>
+            </ng-container>
 
-                <div *ngIf="!((filteredArticles$ | async)?.length)" class="empty-state">
-                    <i class="pi pi-inbox"></i>
-                    <p>Aucun article trouvé</p>
-                </div>
+            <div *ngIf="!((filteredArticles$ | async)?.length)" class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>Aucun article trouvé</p>
             </div>
         </p-card>
     </div>
@@ -186,12 +193,6 @@
                 <small *ngIf="selectedArticleForm.get('employee')?.invalid && selectedArticleForm.get('employee')?.touched" style="color: #ef4444"> L'employé est obligatoire </small>
             </div>
 
-            <!-- Client (optionnel) — lier la vente à un client enregistré -->
-            <div class="dialog-section">
-                <label class="dialog-label">Client <span class="optional">(optionnel)</span></label>
-                <p-select formControlName="client" [options]="(clients$ | async) || []" optionLabel="name" optionValue="id" placeholder="Aucun client (vente au comptoir)" [filter]="true" [showClear]="true" class="w-full" appendTo="body"> </p-select>
-            </div>
-
             <div class="dialog-section" *ngIf="isCarKeyArticle(articleSelectedForModal)">
                 <label class="dialog-label"> Nom client <span class="required">*</span> </label>
                 <input pInputText formControlName="customerName" placeholder="Nom du client" class="w-full" />
@@ -233,12 +234,6 @@
             <label class="dialog-label"> Employé <span class="required">*</span> </label>
             <p-select formControlName="employee" [options]="(employee$ | async) || []" optionLabel="name" optionValue="id" placeholder="Sélectionner un employé" [filter]="true" appendTo="body" class="w-full" />
             <small *ngIf="selectedServiceForm.get('employee')?.invalid && selectedServiceForm.get('employee')?.touched" style="color: #ef4444"> L'employé est obligatoire </small>
-        </div>
-
-        <!-- Client (optionnel) — lier le service à un client enregistré -->
-        <div class="dialog-section">
-            <label class="dialog-label">Client <span class="optional">(optionnel)</span></label>
-            <p-select formControlName="client" [options]="(clients$ | async) || []" optionLabel="name" optionValue="id" placeholder="Aucun client (vente au comptoir)" [filter]="true" [showClear]="true" appendTo="body" class="w-full" />
         </div>
 
         <div class="dialog-section">
@@ -298,10 +293,15 @@
     </ng-template>
 </p-dialog>
 
-<!-- ================= RETURNS (New Return + tracking table) ================= -->
-<div class="returns-section mt-4">
+<!-- ================= RETURNS (modal: New Return + tracking table) ================= -->
+<p-dialog [(visible)]="returnsVisible" [modal]="true" [closable]="true" [dismissableMask]="true" [style]="{ width: '95vw', maxWidth: '1400px' }" header="Retours d'articles">
     <app-article-return />
-</div>
+</p-dialog>
+
+<!-- ================= TASK BOARD (modal, stays inside the shop) ================= -->
+<p-dialog [(visible)]="taskBoardVisible" [modal]="true" [closable]="true" [dismissableMask]="true" [style]="{ width: '95vw', maxWidth: '1400px' }" header="Tableau des tâches">
+    <app-work-task />
+</p-dialog>
 
 <p-toast />
 <p-confirmDialog />

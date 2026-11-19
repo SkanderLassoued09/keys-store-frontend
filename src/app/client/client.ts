@@ -4,7 +4,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { Button } from 'primeng/button';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { Dialog } from 'primeng/dialog';
-import { FileUpload } from 'primeng/fileupload';
+import { DocumentsDialog } from '../documents/documents-dialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
@@ -19,12 +19,21 @@ import * as ClientSelectors from '../store/client-store/client.selectors';
 
 @Component({
     selector: 'app-client',
-    imports: [TableModule, Dialog, ToastModule, ToolbarModule, ConfirmDialog, InputTextModule, CommonModule, FileUpload, FormsModule, IconFieldModule, InputIconModule, Button, ReactiveFormsModule],
+    imports: [TableModule, Dialog, ToastModule, ToolbarModule, ConfirmDialog, InputTextModule, CommonModule, DocumentsDialog, FormsModule, IconFieldModule, InputIconModule, Button, ReactiveFormsModule],
     providers: [MessageService, ConfirmationService],
     templateUrl: './client.html',
     styleUrl: './client.scss'
 })
 export class Client {
+    // BL / BC / invoice tracking dialog (the only client feature besides contact info).
+    documentsVisible = false;
+    documentsOwner: { id: string; name: string } | null = null;
+
+    openDocuments(row: any) {
+        this.documentsOwner = { id: row._id, name: `${row.firstName ?? ''} ${row.lastName ?? ''}`.trim() };
+        this.documentsVisible = true;
+    }
+
     // Dialog state
     articleDialog: boolean = false;
     submitted: boolean = false;
@@ -138,11 +147,5 @@ export class Client {
     // Get save button label dynamically
     getSaveButtonLabel(): string {
         return this.isEditMode ? 'Enregistrer' : 'Créer le client';
-    }
-
-    // Export CSV placeholder
-    exportCSV() {
-        // Implementation for CSV export if needed
-        console.log('Export CSV');
     }
 }

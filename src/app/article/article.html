@@ -12,14 +12,16 @@
 <!-- <div *ngIf="error$ | async as error">Error: {{ error }}</div> -->
 <p-table
     #dt
-    [value]="(article$ | async) || []"
+    [value]="(groupedArticles$ | async) || []"
+    rowGroupMode="subheader"
+    groupRowsBy="familyLabel"
     [loading]="(loading$ | async) || false"
     [rows]="10"
     [paginator]="true"
     [rowHover]="true"
     dataKey="id"
     [tableStyle]="{ 'min-width': '75rem' }"
-    [globalFilterFields]="['name', 'reference', 'type', 'articleType', 'category']"
+    [globalFilterFields]="['family', 'name', 'reference', 'type', 'articleType', 'category']"
     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
     [showCurrentPageReport]="true"
 >
@@ -34,16 +36,26 @@
         <tr>
             <!-- <th style="width: 3rem"><p-tableHeaderCheckbox /></th> -->
 
-            <th>Nom</th>
+            <th>Modèle</th>
             <th>Référence</th>
             <th>Prix d’achat</th>
             <th>Prix de vente</th>
             <th>Stock Maison</th>
             <th>Stock Magasin</th>
-            <th>Fournisseur</th>
             <th>Catégorie</th>
             <th>Vedette</th>
             <th style="min-width: 10rem">Actions</th>
+        </tr>
+    </ng-template>
+
+    <!-- FAMILY HEADER -->
+    <ng-template pTemplate="groupheader" let-item>
+        <tr class="family-row">
+            <td colspan="9">
+                <i class="pi pi-folder"></i>
+                <strong>{{ item.familyLabel }}</strong>
+                <span class="family-count" *ngIf="item.familyLabel !== 'Sans famille'">{{ familyCount(item.family) }} modèle(s)</span>
+            </td>
         </tr>
     </ng-template>
 
@@ -61,7 +73,6 @@
                 <span style="margin-right: 0.4rem">{{ item.shopQuantity }}</span>
                 <p-tag *ngIf="isShopLow(item.shopQuantity)" value="Stock magasin faible" severity="warn" />
             </td>
-            <td>{{ item.fournisseur }}</td>
             <td>{{ displayClassification(item) }}</td>
             <td>
                 <i *ngIf="item.featured" class="pi pi-star-fill" style="color: #f59e0b" pTooltip="Article vedette"></i>
@@ -79,44 +90,27 @@
 <!-- EDIT DIALOG -->
 <!--  -->
 
+<p-toast />
+
 <p-dialog [(visible)]="articleDialog" [style]="{ width: '650px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" styleClass="article-dialog">
     <form [formGroup]="articleForm" class="article-form" (ngSubmit)="saveArticle()">
         <!-- 🔹 Catégorie (image-based selection) — replaces the legacy Type field -->
         <div class="form-section">
             <label class="section-label">Catégorie <span class="required">*</span></label>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                <button
-                    type="button"
-                    *ngFor="let cat of (categories$ | async) || []"
-                    class="cat-card"
-                    [class.selected]="articleForm.get('category')?.value === cat._id"
-                    (click)="selectCategory(cat._id)"
-                    [title]="cat.name"
-                >
+                <button type="button" *ngFor="let cat of (categories$ | async) || []" class="cat-card" [class.selected]="articleForm.get('category')?.value === cat._id" (click)="selectCategory(cat._id)" [title]="cat.name">
                     <img [src]="cat.image || fallbackImage" (error)="onImgError($event)" alt="{{ cat.name }}" class="cat-card-img" />
                     <span class="cat-card-label">{{ cat.name }}</span>
                 </button>
             </div>
-            <small class="text-surface-500" *ngIf="!((categories$ | async)?.length)">
-                Aucune catégorie. Ajoutez-en depuis Paramètres → Catégories.
-            </small>
+            <small class="text-surface-500" *ngIf="!((categories$ | async)?.length)"> Aucune catégorie. Créez-en une d’abord dans le menu « Catégories &amp; sous-catégories ». </small>
             <small class="error-message block" *ngIf="submitted && articleForm.get('category')?.invalid"> Veuillez sélectionner une catégorie </small>
 
             <!-- Step 2: sub-category, filtered by the selected category -->
             <div class="form-row mt-3" *ngIf="articleForm.get('category')?.value">
                 <div class="form-field">
                     <label for="subCategory">Sous-catégorie</label>
-                    <p-select
-                        id="subCategory"
-                        formControlName="subCategory"
-                        [options]="filteredSubCategories"
-                        optionLabel="name"
-                        optionValue="_id"
-                        placeholder="Sélectionner une sous-catégorie"
-                        [filter]="true"
-                        [showClear]="true"
-                        appendTo="body"
-                    />
+                    <p-select id="subCategory" formControlName="subCategory" [options]="filteredSubCategories" optionLabel="name" optionValue="_id" placeholder="Sélectionner une sous-catégorie" [filter]="true" [showClear]="true" appendTo="body" />
                     <small class="text-surface-500" *ngIf="!filteredSubCategories.length">Aucune sous-catégorie pour cette catégorie.</small>
                     <small class="error-message" *ngIf="submitted && articleForm.get('subCategory')?.invalid"> Veuillez sélectionner une sous-catégorie </small>
                 </div>
@@ -128,14 +122,55 @@
             <label class="section-label">Informations générales</label>
 
             <div class="form-row">
-                <!-- Name -->
-                <div class="form-field flex-2">
-                    <label for="name">Nom <span class="required">*</span></label>
-                    <input id="name" type="text" pInputText formControlName="name" placeholder="Ex: Clé Yale" />
-                    <small class="error-message" *ngIf="submitted && articleForm.get('name')?.invalid"> Le nom est obligatoire </small>
+                <!-- Nom de famille: groups models (UL → UL50, UL51…) -->
+                <div class="form-field flex-1">
+                    <label for="family">Nom de famille <span class="required">*</span></label>
+                    <p-autocomplete
+                        inputId="family"
+                        formControlName="family"
+                        [suggestions]="familySuggestions"
+                        (completeMethod)="searchFamilies($event)"
+                        [dropdown]="true"
+                        [forceSelection]="false"
+                        placeholder="Ex: VAC, UL, Yale"
+                        appendTo="body"
+                        styleClass="w-full"
+                        inputStyleClass="w-full"
+                    >
+                        <ng-template let-family #item>
+                            <div class="flex justify-between gap-4 w-full">
+                                <span>{{ family }}</span>
+                                <small class="text-surface-500">{{ familyCount(family) }} article(s)</small>
+                            </div>
+                        </ng-template>
+                    </p-autocomplete>
+                    <small class="error-message" *ngIf="submitted && articleForm.get('family')?.invalid"> Le nom de famille est obligatoire </small>
+                    <small class="field-hint" *ngIf="familyCount(articleForm.get('family')?.value) as n">Famille existante · {{ n }} article(s)</small>
                 </div>
 
-                <!-- Reference -->
+                <!-- Model(s): one name, a list, or a range on create -->
+                <div class="form-field flex-1">
+                    <label for="name">{{ isEditMode ? 'Modèle' : 'Modèle(s)' }} <span class="required">*</span></label>
+                    <input id="name" type="text" pInputText formControlName="name" (blur)="onModelsBlur()" [placeholder]="isEditMode ? 'Ex: VAC12' : 'Ex: VAC1-33 ou UL50, UL51'" />
+                    <small class="error-message" *ngIf="submitted && articleForm.get('name')?.invalid"> Le modèle est obligatoire </small>
+                </div>
+            </div>
+
+            <!-- Live preview of what will be created -->
+            <div class="variant-preview" *ngIf="variantPreview.length > 1">
+                <div class="variant-preview-title">
+                    <i class="pi pi-sparkles"></i>
+                    {{ variantPreview.length }} articles seront créés dans « {{ articleForm.get('family')?.value || '…' }} » avec les mêmes prix, catégorie et stock
+                </div>
+                <div class="variant-chips">
+                    <span class="variant-chip" *ngFor="let n of variantPreview.slice(0, 12)">{{ n }}</span>
+                    <span class="variant-chip more" *ngIf="variantPreview.length > 12">… {{ variantPreview[variantPreview.length - 1] }}</span>
+                </div>
+            </div>
+            <small class="field-hint" *ngIf="!isEditMode && variantPreview.length <= 1">Astuce : « VAC1-33 » crée VAC1 … VAC33 d'un coup. La famille se remplit toute seule.</small>
+
+            <div class="form-row" *ngIf="variantPreview.length <= 1">
+                <!-- Reference (single article only; ranges use the model as reference) -->
                 <div class="form-field flex-1">
                     <label for="reference">Référence</label>
                     <input id="reference" type="text" pInputText formControlName="reference" placeholder="Ex: REF-001" />
@@ -161,59 +196,18 @@
                 </div>
             </div>
 
+            <!-- Same prices for the whole family (edit only) -->
+            <div class="family-prices" *ngIf="isEditMode && familyCount(articleForm.get('family')?.value) > 1">
+                <p-checkbox inputId="applyFamily" [binary]="true" [(ngModel)]="applyPricesToFamily" [ngModelOptions]="{ standalone: true }" />
+                <label for="applyFamily"
+                    >Appliquer ces prix aux <strong>{{ familyCount(articleForm.get('family')?.value) }}</strong> articles de la famille « {{ articleForm.get('family')?.value }} »</label
+                >
+            </div>
+
             <!-- Profit Margin -->
             <div class="profit-indicator" *ngIf="calculateMargin() !== null">
                 <span class="profit-label">Marge bénéficiaire:</span>
                 <span class="profit-value" [ngClass]="getMarginClass()"> +{{ calculateMargin() }}% </span>
-            </div>
-        </div>
-
-        <!-- 🔹 Commission section -->
-        <div class="rounded-lg border border-indigo-200 bg-indigo-50/40 p-4 mb-4">
-            <div class="flex items-center gap-2 mb-1">
-                <div class="flex items-center justify-center w-8 h-8 rounded-md bg-indigo-100 text-indigo-700">
-                    <i class="pi pi-percentage"></i>
-                </div>
-                <div class="flex flex-col">
-                    <span class="font-semibold text-surface-900">Prime employé (commission)</span>
-                    <span class="text-xs text-surface-500">Définissez le pourcentage de commission que l'employé recevra sur chaque vente de cet article.</span>
-                </div>
-            </div>
-
-            <div class="flex flex-col md:flex-row gap-3 mt-3">
-                <!-- Percentage input -->
-                <div class="flex-1">
-                    <label for="commissionPercent" class="text-xs font-semibold text-surface-700 block mb-1">Pourcentage (%)</label>
-                    <p-inputNumber
-                        id="commissionPercent"
-                        formControlName="commissionPercent"
-                        [min]="0"
-                        [showButtons]="true"
-                        buttonLayout="horizontal"
-                        spinnerMode="horizontal"
-                        mode="decimal"
-                        [minFractionDigits]="0"
-                        [maxFractionDigits]="2"
-                        suffix=" %"
-                        inputStyleClass="text-center font-semibold"
-                    />
-                </div>
-
-                <!-- Live preview card -->
-                <div class="flex-1 flex flex-col gap-1 p-3 rounded-lg border border-indigo-200 bg-white">
-                    <span class="text-xs text-surface-500 uppercase tracking-wide">Aperçu</span>
-                    <span class="text-xs text-surface-600">Commission par vente sur bénéfice</span>
-                    <span class="text-2xl font-bold text-indigo-700">{{ articleCommissionPreview() | number: '1.3-3' }} DT</span>
-                    <span class="text-xs text-surface-500">
-                        (({{ (articleForm.get('sellingPrice')?.value || 0) | number: '1.3-3' }} DT - {{ (articleForm.get('purchasePrice')?.value || 0) | number: '1.3-3' }} DT) × {{ articleForm.get('commissionPercent')?.value || 0 }}%)
-                    </span>
-                </div>
-            </div>
-
-            <!-- Help info bar -->
-            <div class="flex items-center gap-2 mt-3 px-3 py-2 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-xs">
-                <i class="pi pi-info-circle"></i>
-                <span>L'employé recevra {{ articleForm.get('commissionPercent')?.value || 0 }}% du bénéfice de cet article.</span>
             </div>
         </div>
 
@@ -239,12 +233,6 @@
             <label class="section-label">Informations complémentaires</label>
 
             <div class="form-row">
-                <div class="form-field">
-                    <label for="fournisseur">Fournisseur</label>
-                    <p-select [options]="(providers$ | async) ?? []" [appendTo]="'body'" formControlName="fournisseur" optionLabel="name" optionValue="id" placeholder="Sélectionner un fournisseur" [filter]="true" filterPlaceholder="Rechercher...">
-                    </p-select>
-                </div>
-
                 <div class="form-field">
                     <label for="emplacement">Emplacement</label>
                     <input id="emplacement" type="text" pInputText formControlName="emplacement" placeholder="Ex: Rayon A, Étagère 3" />
@@ -288,14 +276,13 @@
     <ng-template #footer>
         <div class="dialog-footer">
             <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (click)="hideDialog()" />
-            <p-button [label]="getSaveButtonLabel()" [icon]="isEditMode ? 'pi pi-save' : 'pi pi-check'" severity="primary" (click)="saveArticle()" [disabled]="articleForm.invalid" />
+            <p-button [label]="getSaveButtonLabel()" [icon]="isEditMode ? 'pi pi-save' : 'pi pi-check'" severity="primary" (click)="saveArticle()" />
         </div>
     </ng-template>
 </p-dialog>
 
 <!-- ===== TRANSFER DIALOG ===== -->
 <p-dialog [(visible)]="transferDialog" [style]="{ width: '560px' }" header="Transférer vers magasin" [modal]="true" [closable]="true" [draggable]="false" [resizable]="false" styleClass="transfer-dialog">
-
     <!-- Article info card -->
     <div *ngIf="transferArticle" class="flex items-center gap-3 p-3 mb-4 rounded-lg border border-surface-200 bg-surface-50">
         <div class="flex items-center justify-center w-10 h-10 rounded-md bg-primary-100 text-primary-700">
@@ -338,7 +325,18 @@
                 <span class="text-xs text-surface-500">Max : {{ transferArticle?.stockQuantity || 0 }}</span>
             </div>
 
-            <p-inputNumber formControlName="quantity" [min]="1" [max]="transferArticle?.stockQuantity || 0" [showButtons]="true" buttonLayout="horizontal" spinnerMode="horizontal" decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary" inputStyleClass="text-center font-semibold" styleClass="w-full" />
+            <p-inputNumber
+                formControlName="quantity"
+                [min]="1"
+                [max]="transferArticle?.stockQuantity || 0"
+                [showButtons]="true"
+                buttonLayout="horizontal"
+                spinnerMode="horizontal"
+                decrementButtonClass="p-button-secondary"
+                incrementButtonClass="p-button-secondary"
+                inputStyleClass="text-center font-semibold"
+                styleClass="w-full"
+            />
 
             <div class="flex flex-wrap gap-2 mt-2">
                 <p-button label="+1" severity="secondary" [outlined]="true" size="small" (onClick)="bumpTransfer(1)" />
@@ -347,12 +345,8 @@
                 <p-button label="Max" severity="secondary" [outlined]="true" size="small" (onClick)="bumpTransfer('max')" />
             </div>
 
-            <small *ngIf="transferForm.get('quantity')?.hasError('max') && transferForm.get('quantity')?.touched" class="block mt-2 text-red-500">
-                Quantité dépasse le stock disponible
-            </small>
-            <small *ngIf="transferForm.get('quantity')?.hasError('min') && transferForm.get('quantity')?.touched" class="block mt-2 text-red-500">
-                La quantité doit être supérieure à 0
-            </small>
+            <small *ngIf="transferForm.get('quantity')?.hasError('max') && transferForm.get('quantity')?.touched" class="block mt-2 text-red-500"> Quantité dépasse le stock disponible </small>
+            <small *ngIf="transferForm.get('quantity')?.hasError('min') && transferForm.get('quantity')?.touched" class="block mt-2 text-red-500"> La quantité doit être supérieure à 0 </small>
         </div>
 
         <!-- Preview -->

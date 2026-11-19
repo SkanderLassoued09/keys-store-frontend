@@ -790,3 +790,29 @@ tr.row-highlighted {
         }
     }
 }
+
+// One section per article family (UL, VAC…).
+.family-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.9rem 0 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+
+    &:first-child {
+        margin-top: 0;
+    }
+
+    .pi-folder {
+        color: var(--p-primary-color);
+    }
+
+    small {
+        padding: 0 0.45rem;
+        border-radius: 999px;
+        font-weight: 500;
+        background: var(--p-content-hover-background, #f1f5f9);
+        color: var(--p-text-muted-color);
+    }
+}

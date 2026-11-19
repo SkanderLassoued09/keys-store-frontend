@@ -54,7 +54,7 @@
     [rowHover]="true"
     dataKey="_id"
     [tableStyle]="{ 'min-width': '75rem' }"
-    [globalFilterFields]="['name', 'category', 'customerName', 'employee.firstName', 'employee.lastName', 'client.name']"
+    [globalFilterFields]="['name', 'category', 'customerName', 'employee.firstName', 'employee.lastName']"
     currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} entrées"
     [showCurrentPageReport]="true"
 >
@@ -92,7 +92,7 @@
             <td>{{ item.duration|| '-' }}</td>
             <td>{{ item.price ? (item.price | currency: 'TND') : '-' }}</td>
             <td><p-tag [value]="getStatusTagLabel(item)" [severity]="getStatusTagSeverity(item)" /></td>
-            
+
             <td>
                 <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" (click)="deleteOrder(item)" pTooltip="Supprimer" />
             </td>
@@ -129,31 +129,8 @@
 
             <div class="form-row">
                 <div class="form-field">
-                    <label for="client">Client <span class="required">*</span></label>
-                    <p-select id="client" formControlName="client" [options]="(client$ | async) ?? []" optionLabel="name" optionValue="id" placeholder="Sélectionner un client" [filter]="true" filterPlaceholder="Rechercher..." />
-                    <small class="error-message" *ngIf="submitted && orderForm.get('client')?.invalid"> Le client est obligatoire </small>
-                </div>
-
-                <div class="form-field">
                     <label for="employee">Employé</label>
                     <p-select id="employee" formControlName="employee" [options]="(employee$ | async) ?? []" optionLabel="name" optionValue="id" placeholder="Sélectionner un employé" [filter]="true" filterPlaceholder="Rechercher..." />
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-field">
-                    <label for="machine">Machine</label>
-                    <p-select
-                        id="machine"
-                        formControlName="machine"
-                        [options]="(machine$ | async) ?? []"
-                        optionLabel="name"
-                        optionValue="id"
-                        placeholder="Sélectionner une machine"
-                        [filter]="true"
-                        filterPlaceholder="Rechercher..."
-                        [showClear]="true"
-                    />
                 </div>
             </div>
         </div>
@@ -175,8 +152,6 @@
                 </div>
             </div>
         </div>
-
-        
     </form>
 
     <ng-template #footer>
@@ -187,10 +162,15 @@
     </ng-template>
 </p-dialog>
 
-<!-- COMMISSION MODAL (global service commission %) -->
+<!-- COMMISSION MODAL (global article + service commission %) -->
 <p-dialog [(visible)]="commissionDialog" [style]="{ width: '460px' }" header="Commission employé" [modal]="true" [closable]="true">
     <form [formGroup]="commissionForm" class="flex flex-col gap-3" (ngSubmit)="saveCommission()">
-        <p class="text-sm text-surface-500 m-0">Pourcentage de commission appliqué aux services réalisés par les employés (ex: 10% d'un service de 100 DT = 10 DT pour l'employé).</p>
+        <p class="text-sm text-surface-500 m-0">Pourcentages globaux appliqués automatiquement à chaque vente (ex: 5% d'une vente de 100 DT = 5 DT pour l'employé).</p>
+        <div class="flex flex-col gap-1">
+            <label for="articleCommission">Commission articles (%) <span class="text-red-500">*</span></label>
+            <p-inputNumber inputId="articleCommission" formControlName="articleCommissionPercent" [min]="0" [showButtons]="true" suffix=" %" [minFractionDigits]="0" [maxFractionDigits]="2" />
+            <small class="text-red-500" *ngIf="commissionForm.get('articleCommissionPercent')?.invalid && commissionForm.get('articleCommissionPercent')?.touched">Un pourcentage valide est requis.</small>
+        </div>
         <div class="flex flex-col gap-1">
             <label for="commission">Commission service (%) <span class="text-red-500">*</span></label>
             <p-inputNumber inputId="commission" formControlName="serviceCommissionPercent" [min]="0" [showButtons]="true" suffix=" %" [minFractionDigits]="0" [maxFractionDigits]="2" />
