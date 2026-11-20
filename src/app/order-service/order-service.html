@@ -1,11 +1,13 @@
 <!-- ================= HEADER ================= -->
 <div class="page-header">
-    <h2>Shop Interface</h2>
+    <div class="flex items-center gap-3">
+        <img src="logo.svg" alt="Maison de la Clé" style="height: 2.75rem" />
+        <h2>Shop Interface</h2>
+    </div>
 
     <div class="header-actions flex flex-wrap items-center gap-2 sm:gap-3">
         <p-button label="Tableau des tâches" icon="pi pi-check-square" severity="info" [outlined]="true" (onClick)="taskBoardVisible = true" />
         <p-button label="Retours" icon="pi pi-undo" severity="warn" (onClick)="returnsVisible = true" />
-        <p-button *ngIf="isOwner" label="Interface Admin" icon="pi pi-th-large" severity="secondary" (onClick)="backToAdmin()" />
         <p-button label="Déconnexion" icon="pi pi-sign-out" severity="secondary" [text]="true" (onClick)="logout()" />
     </div>
 </div>
@@ -150,6 +152,11 @@
                     <i class="pi pi-inbox"></i>
                     <p>Aucun article sélectionné</p>
                 </div>
+            </div>
+
+            <div class="selected-total">
+                <span>Total</span>
+                <strong>{{ selectedTotal | number: '1.3-3' }} TND</strong>
             </div>
 
             <!-- ✅ REMOVED "Voir" BUTTON - Only Annuler and Confirmer remain -->

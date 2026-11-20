@@ -19,6 +19,8 @@ export class LoginPage {
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
 
+    // Shop counter login (/shop/login): everyone goes straight to the shop.
+    readonly shop = !!this.route.snapshot.data['shop'];
     loading = false;
     error = '';
 
@@ -42,7 +44,7 @@ export class LoginPage {
                 // redirect (or the admin home). Prevents an employee bouncing off
                 // an admin URL they can't reach.
                 const redirect = this.route.snapshot.queryParamMap.get('redirect');
-                const target = res.user.role === 'employee' ? '/order-service' : redirect && !redirect.startsWith('/login') ? redirect : '/';
+                const target = this.shop || res.user.role === 'employee' ? '/order-service' : redirect && !redirect.startsWith('/login') ? redirect : '/';
                 this.router.navigateByUrl(target);
             },
             error: (err: HttpErrorResponse) => {

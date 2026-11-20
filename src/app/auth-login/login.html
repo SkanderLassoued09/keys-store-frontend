@@ -1,9 +1,9 @@
 <div class="login-wrapper">
     <form class="login-card" [formGroup]="form" (ngSubmit)="submit()">
         <div class="login-head">
-            <div class="login-logo"><i class="pi pi-key"></i></div>
-            <h1>Keys Store</h1>
-            <p>Connectez-vous pour continuer</p>
+            <img src="logo.svg" alt="Maison de la Clé" class="login-brand" />
+            <h1>{{ shop ? 'Shop — Caisse' : 'Administration' }}</h1>
+            <p>{{ shop ? 'Connexion à l’interface boutique' : 'Connectez-vous pour continuer' }}</p>
         </div>
 
         <div class="login-field">

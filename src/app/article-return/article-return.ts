@@ -60,6 +60,15 @@ export class ArticleReturn implements OnInit {
     returns$ = this.store.select(ArticleReturnSelectors.selectAllArticleReturns);
     loading$ = this.store.select(ArticleReturnSelectors.selectArticleReturnLoading);
     articles$ = this.store.select(ArticleSelectors.selectAllArticles);
+    // Picker label "Famille · Modèle (réf) — stock N" so look-alike names (two "Cr2032") are told apart.
+    articleOptions$ = this.articles$.pipe(
+        map((list) =>
+            list.map((a: any) => ({
+                ...a,
+                label: [a.family, a.name].filter(Boolean).join(' · ') + (a.reference && a.reference !== a.name ? ` (${a.reference})` : '') + ` — stock ${a.shopQuantity ?? 0}`
+            }))
+        )
+    );
     employees$ = this.store.select(EmployeeSelectors.selectEmployeeDropdown);
     saleOptions$: Observable<any[]>;
 

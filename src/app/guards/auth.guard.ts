@@ -12,3 +12,9 @@ export const authGuard: CanActivateFn = (_route, state) => {
 };
 
 export const authChildGuard: CanActivateChildFn = (route, state) => authGuard(route, state);
+
+// Shop counter: same check, but unauthenticated users land on the shop's own login page.
+export const shopGuard: CanActivateFn = () => {
+    const auth = inject(AuthService);
+    return auth.isAuthenticated() ? true : inject(Router).createUrlTree(['/shop/login']);
+};

@@ -816,3 +816,27 @@ tr.row-highlighted {
         color: var(--p-text-muted-color);
     }
 }
+
+/* Shop scroll: the whole centre column scrolls so every family/article is reachable. */
+.center-panel {
+    overflow-y: auto;
+}
+.center-panel > .p-card.articles-card {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+.selected-total {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.75rem 0;
+    margin-bottom: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 1rem;
+}
+.selected-total strong {
+    font-size: 1.4rem;
+    color: #16a34a;
+}

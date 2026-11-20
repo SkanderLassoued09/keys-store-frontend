@@ -3,7 +3,7 @@
 <p-toolbar class="mb-6">
     <ng-template #start>
         <p-button label="Nouvel ordre de travail" icon="pi pi-plus" class="mr-2" (onClick)="openNew()" />
-        <p-button label="Commission employé" icon="pi pi-percentage" severity="secondary" outlined (onClick)="openCommissionDialog()" />
+        <p-button label="Pourcentage prime (articles &amp; services)" icon="pi pi-percentage" severity="warn" (onClick)="openCommissionDialog()" />
     </ng-template>
 
     <ng-template #end>
@@ -163,16 +163,16 @@
 </p-dialog>
 
 <!-- COMMISSION MODAL (global article + service commission %) -->
-<p-dialog [(visible)]="commissionDialog" [style]="{ width: '460px' }" header="Commission employé" [modal]="true" [closable]="true">
+<p-dialog [(visible)]="commissionDialog" [style]="{ width: '460px' }" header="Pourcentage prime — articles &amp; services" [modal]="true" [closable]="true">
     <form [formGroup]="commissionForm" class="flex flex-col gap-3" (ngSubmit)="saveCommission()">
         <p class="text-sm text-surface-500 m-0">Pourcentages globaux appliqués automatiquement à chaque vente (ex: 5% d'une vente de 100 DT = 5 DT pour l'employé).</p>
         <div class="flex flex-col gap-1">
-            <label for="articleCommission">Commission articles (%) <span class="text-red-500">*</span></label>
+            <label for="articleCommission">Prime articles (%) <span class="text-red-500">*</span></label>
             <p-inputNumber inputId="articleCommission" formControlName="articleCommissionPercent" [min]="0" [showButtons]="true" suffix=" %" [minFractionDigits]="0" [maxFractionDigits]="2" />
             <small class="text-red-500" *ngIf="commissionForm.get('articleCommissionPercent')?.invalid && commissionForm.get('articleCommissionPercent')?.touched">Un pourcentage valide est requis.</small>
         </div>
         <div class="flex flex-col gap-1">
-            <label for="commission">Commission service (%) <span class="text-red-500">*</span></label>
+            <label for="commission">Prime services (%) <span class="text-red-500">*</span></label>
             <p-inputNumber inputId="commission" formControlName="serviceCommissionPercent" [min]="0" [showButtons]="true" suffix=" %" [minFractionDigits]="0" [maxFractionDigits]="2" />
             <small class="text-red-500" *ngIf="commissionForm.get('serviceCommissionPercent')?.invalid && commissionForm.get('serviceCommissionPercent')?.touched">Un pourcentage valide est requis.</small>
         </div>

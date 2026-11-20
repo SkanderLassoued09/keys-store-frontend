@@ -1,7 +1,6 @@
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { RoleService } from '@/layout/service/role.service';
 import { AuthService } from '@/layout/service/auth.service';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -119,19 +118,19 @@ export class OrderService implements OnInit {
     returnsVisible = false;
     taskBoardVisible = false;
 
-    // ===== Interface separation helpers =====
-    get isOwner(): boolean {
-        return this.roleService.isAdmin();
+    // Money to collect for the pending basket: articles at selling price × qty, services at their price.
+    get selectedTotal(): number {
+        return this.selectedArticlesFormArray.controls.reduce((sum, c) => {
+            const v = c.value;
+            const line = v.entryType === 'service' ? Number(v.price) || 0 : (Number(v.sellingPrice) || 0) * (Number(v.quantity) || 0);
+            return sum + line;
+        }, 0);
     }
 
-    // Owners jump back to the admin shell; employees only have the Shop + tasks,
-    // so their exit is a full logout.
-    backToAdmin(): void {
-        this.router.navigate(['/']);
-    }
-
+    // The shop has its own login page; leaving the shop goes back there.
     logout(): void {
-        this.authService.logout();
+        this.authService.logout(false);
+        this.router.navigateByUrl('/shop/login');
     }
 
     // Template helper used by the shop-of-the-day table.
@@ -195,7 +194,6 @@ export class OrderService implements OnInit {
         private confirmationService: ConfirmationService,
         private actions$: Actions,
         private router: Router,
-        private roleService: RoleService,
         private authService: AuthService
     ) {
         this.articles$ = this.store.select(ArticleSelectors.selectAllArticles);

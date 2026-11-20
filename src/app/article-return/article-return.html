@@ -53,7 +53,7 @@
     <form [formGroup]="returnForm" class="return-form" (ngSubmit)="saveReturn()">
         <div class="form-field">
             <label>Original Article <span class="required">*</span></label>
-            <p-select formControlName="originalArticle" [options]="(articles$ | async) || []" optionLabel="name" optionValue="_id" placeholder="Select article" [filter]="true" appendTo="body" class="w-full" />
+            <p-select formControlName="originalArticle" [options]="(articleOptions$ | async) || []" optionLabel="label" optionValue="_id" placeholder="Select article" [filter]="true" appendTo="body" class="w-full" />
             <small *ngIf="returnForm.get('originalArticle')?.invalid && returnForm.get('originalArticle')?.touched" class="error">Original article is required.</small>
         </div>
 
@@ -71,7 +71,7 @@
         <ng-container *ngIf="returnForm.get('returnType')?.value === 'REPLACED'">
             <div class="form-field">
                 <label>Replacement Article <span class="required">*</span></label>
-                <p-select formControlName="replacementArticle" [options]="(articles$ | async) || []" optionLabel="name" optionValue="_id" placeholder="Select replacement" [filter]="true" appendTo="body" class="w-full" />
+                <p-select formControlName="replacementArticle" [options]="(articleOptions$ | async) || []" optionLabel="label" optionValue="_id" placeholder="Select replacement" [filter]="true" appendTo="body" class="w-full" />
             </div>
             <div class="form-field">
                 <label>Replacement Quantity <span class="required">*</span></label>

@@ -5,7 +5,7 @@ import { Landing } from './app/pages/landing/landing';
 import { Notfound } from './app/pages/notfound/notfound';
 import { OrderService } from '@/order-service/order-service';
 import { LoginPage } from '@/auth-login/login';
-import { authGuard } from '@/guards/auth.guard';
+import { authGuard, shopGuard } from '@/guards/auth.guard';
 import { shellChildGuard } from '@/guards/shell-child.guard';
 
 export const appRoutes: Routes = [
@@ -28,7 +28,9 @@ export const appRoutes: Routes = [
     { path: 'landing', component: Landing },
     // Login (public) + the shared operational Shop (any authenticated user).
     { path: 'login', component: LoginPage },
-    { path: 'order-service', component: OrderService, canActivate: [authGuard] },
+    { path: 'shop/login', component: LoginPage, data: { shop: true } },
+    { path: 'shop', pathMatch: 'full', redirectTo: 'order-service' },
+    { path: 'order-service', component: OrderService, canActivate: [shopGuard] },
     { path: 'notfound', component: Notfound },
     { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
     { path: '**', redirectTo: '/notfound' }
