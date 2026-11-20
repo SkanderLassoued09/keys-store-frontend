@@ -17,7 +17,7 @@ import { AuthService } from '../service/auth.service';
                 <i class="pi pi-bars"></i>
             </button>
             <a class="layout-topbar-logo" routerLink="/">
-                <img src="logo.svg" alt="Maison de la Clé" style="height: 2.75rem" />
+                <img src="logo.png" alt="Maison de la Clé" style="height: 3.5rem" />
             </a>
         </div>
 
