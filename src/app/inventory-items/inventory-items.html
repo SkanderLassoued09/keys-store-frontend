@@ -1,0 +1,224 @@
+<p-toast />
+<p-confirmDialog [style]="{ width: '420px' }" />
+
+<section class="inv-items">
+    <h3 class="m-0 mb-3">Articles uniques &amp; fournitures atelier</h3>
+
+    <!-- Collection worth: unique = price, supply = price × quantity -->
+    <div class="worth-row" *ngIf="worth">
+        <div class="worth-card">
+            <small>Articles uniques ({{ worth.uniques.count }})</small>
+            <strong>{{ worth.uniques.value | number: '1.3-3' }} TND</strong>
+        </div>
+        <div class="worth-card">
+            <small>Fournitures — inventaire ({{ worth.supplies.inventory.quantity }} u.)</small>
+            <strong>{{ worth.supplies.inventory.value | number: '1.3-3' }} TND</strong>
+        </div>
+        <div class="worth-card">
+            <small>Fournitures — boutique ({{ worth.supplies.shop.quantity }} u.)</small>
+            <strong>{{ worth.supplies.shop.value | number: '1.3-3' }} TND</strong>
+        </div>
+        <div class="worth-card total">
+            <small>Valeur totale</small>
+            <strong>{{ worth.total | number: '1.3-3' }} TND</strong>
+        </div>
+    </div>
+
+    <p-tabs [(value)]="tab">
+        <p-tablist>
+            <p-tab value="uniques"><i class="pi pi-key mr-2"></i>Articles uniques ({{ uniques.length }})</p-tab>
+            <p-tab value="supplies"><i class="pi pi-wrench mr-2"></i>Fournitures atelier ({{ supplies.length }})</p-tab>
+        </p-tablist>
+        <p-tabpanels>
+            <!-- ===== ArticleUnique: image first, fields underneath ===== -->
+            <p-tabpanel value="uniques">
+                <div class="flex flex-wrap gap-2 justify-between mb-3">
+                    <input pInputText placeholder="Rechercher (nom, catégorie, emplacement)…" [(ngModel)]="uniqueSearch" class="w-full sm:w-80" />
+                    <p-button *ngIf="isAdmin" label="Nouvel article unique" icon="pi pi-plus" (onClick)="openUnique()" />
+                </div>
+
+                <div class="unique-grid">
+                    <div class="unique-card" *ngFor="let u of filteredUniques">
+                        <img [src]="u.image || fallbackImage" (error)="onImgError($event)" [alt]="u.name" class="unique-img" />
+                        <div class="unique-body">
+                            <strong class="unique-name">{{ u.name }}</strong>
+                            <span class="unique-field"><span>Catégorie</span>{{ u.category || '—' }}</span>
+                            <span class="unique-field"><span>Prix</span><b>{{ u.price | number: '1.3-3' }} TND</b></span>
+                            <span class="unique-field"><span>Emplacements</span></span>
+                            <div class="chips">
+                                <p-tag *ngFor="let e of u.emplacements" [value]="e" severity="secondary" />
+                                <small *ngIf="!u.emplacements?.length" class="text-surface-500">—</small>
+                            </div>
+                        </div>
+                        <div class="unique-actions" *ngIf="isAdmin">
+                            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (onClick)="openUnique(u)" ariaLabel="Modifier" />
+                            <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true" (onClick)="deleteUnique(u)" ariaLabel="Supprimer" />
+                        </div>
+                    </div>
+                </div>
+                <p *ngIf="!filteredUniques.length" class="text-center text-surface-500 py-6">Aucun article unique.</p>
+            </p-tabpanel>
+
+            <!-- ===== ShopSupply: table with location, moves and +/- ===== -->
+            <p-tabpanel value="supplies">
+                <div class="flex flex-wrap gap-2 justify-between mb-3">
+                    <p-selectbutton [options]="statusOptions" [(ngModel)]="supplyFilter" optionLabel="label" optionValue="value" [allowEmpty]="false" />
+                    <p-button *ngIf="isAdmin" label="Nouvelle fourniture" icon="pi pi-plus" (onClick)="openSupply()" />
+                </div>
+
+                <p-table [value]="filteredSupplies" [rowHover]="true" dataKey="_id" [tableStyle]="{ 'min-width': '60rem' }">
+                    <ng-template #header>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Catégorie</th>
+                            <th>Statut</th>
+                            <th>Quantité</th>
+                            <th>Prix unitaire</th>
+                            <th>Valeur</th>
+                            <th>Emplacements</th>
+                            <th style="width: 15rem">Actions</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template #body let-s>
+                        <tr>
+                            <td>
+                                <strong>{{ s.name }}</strong>
+                            </td>
+                            <td>{{ s.category || '—' }}</td>
+                            <td><p-tag [value]="statusLabel(s.status)" [severity]="s.status === 'SHOP' ? 'info' : 'secondary'" /></td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <p-button icon="pi pi-minus" size="small" [text]="true" [rounded]="true" (onClick)="adjust(s, -1)" [disabled]="s.quantity <= 0" ariaLabel="Retirer 1" />
+                                    <b class="qty">{{ s.quantity }}</b>
+                                    <p-button icon="pi pi-plus" size="small" [text]="true" [rounded]="true" (onClick)="adjust(s, 1)" ariaLabel="Ajouter 1" />
+                                </div>
+                            </td>
+                            <td>{{ s.price | number: '1.3-3' }} TND</td>
+                            <td>
+                                <b>{{ s.price * s.quantity | number: '1.3-3' }} TND</b>
+                            </td>
+                            <td>
+                                <div class="chips">
+                                    <p-tag *ngFor="let e of s.emplacements" [value]="e" severity="secondary" />
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex gap-1">
+                                    <p-button
+                                        [label]="s.status === 'SHOP' ? 'Vers inventaire' : 'Vers boutique'"
+                                        [icon]="s.status === 'SHOP' ? 'pi pi-arrow-left' : 'pi pi-arrow-right'"
+                                        size="small"
+                                        severity="info"
+                                        [outlined]="true"
+                                        (onClick)="openMove(s)"
+                                        [disabled]="s.quantity <= 0"
+                                    />
+                                    <p-button *ngIf="isAdmin" icon="pi pi-pencil" size="small" [text]="true" [rounded]="true" (onClick)="openSupply(s)" ariaLabel="Modifier" />
+                                    <p-button *ngIf="isAdmin" icon="pi pi-trash" size="small" severity="danger" [text]="true" [rounded]="true" (onClick)="deleteSupply(s)" ariaLabel="Supprimer" />
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template #emptymessage>
+                        <tr>
+                            <td colspan="8" class="text-center text-surface-500 py-6">Aucune fourniture.</td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </p-tabpanel>
+        </p-tabpanels>
+    </p-tabs>
+</section>
+
+<datalist id="unique-categories"><option *ngFor="let c of uniqueCategories" [value]="c"></option></datalist>
+<datalist id="supply-categories"><option *ngFor="let c of supplyCategories" [value]="c"></option></datalist>
+
+<!-- ===== ArticleUnique dialog ===== -->
+<p-dialog [(visible)]="uniqueDialog" [modal]="true" [style]="{ width: '520px' }" [header]="editingUniqueId ? 'Modifier l’article unique' : 'Nouvel article unique'">
+    <form [formGroup]="uniqueForm" class="flex flex-col gap-3" (ngSubmit)="saveUnique()">
+        <div class="image-picker">
+            <img [src]="uniqueForm.value.image || fallbackImage" alt="Aperçu" />
+            <div class="flex flex-col gap-2">
+                <label class="p-button p-button-outlined p-button-sm cursor-pointer">
+                    <i class="pi pi-image mr-2"></i>Choisir une image
+                    <input type="file" accept="image/*" hidden (change)="onImageSelected($event)" />
+                </label>
+                <p-button *ngIf="uniqueForm.value.image" label="Retirer" size="small" severity="secondary" [text]="true" (onClick)="uniqueForm.patchValue({ image: '' })" />
+            </div>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="uName">Nom <span class="text-red-500">*</span></label>
+            <input id="uName" pInputText formControlName="name" placeholder="Ex: Serrure Vachette 3 points" />
+            <small class="text-red-500" *ngIf="uniqueForm.get('name')?.invalid && uniqueForm.get('name')?.touched">Le nom est obligatoire.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="uCategory">Catégorie</label>
+            <input id="uCategory" pInputText formControlName="category" list="unique-categories" placeholder="Ex: Serrure maison, Serrure voiture, Neiman" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="uPrice">Prix (TND) <span class="text-red-500">*</span></label>
+            <p-inputNumber inputId="uPrice" formControlName="price" [min]="0" [minFractionDigits]="0" [maxFractionDigits]="3" styleClass="w-full" inputStyleClass="w-full" />
+            <small class="text-red-500" *ngIf="uniqueForm.get('price')?.invalid && uniqueForm.get('price')?.touched">Le prix est obligatoire.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="uPlaces">Emplacements</label>
+            <input id="uPlaces" pInputText formControlName="emplacements" placeholder="Séparés par des virgules. Ex: Vitrine, Étagère A2" />
+        </div>
+    </form>
+    <ng-template #footer>
+        <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="uniqueDialog = false" />
+        <p-button label="Enregistrer" icon="pi pi-check" (onClick)="saveUnique()" />
+    </ng-template>
+</p-dialog>
+
+<!-- ===== ShopSupply dialog ===== -->
+<p-dialog [(visible)]="supplyDialog" [modal]="true" [style]="{ width: '520px' }" [header]="editingSupplyId ? 'Modifier la fourniture' : 'Nouvelle fourniture'">
+    <form [formGroup]="supplyForm" class="flex flex-col gap-3" (ngSubmit)="saveSupply()">
+        <div class="flex flex-col gap-1">
+            <label for="sName">Nom <span class="text-red-500">*</span></label>
+            <input id="sName" pInputText formControlName="name" placeholder="Ex: Mèche 2.5mm" />
+            <small class="text-red-500" *ngIf="supplyForm.get('name')?.invalid && supplyForm.get('name')?.touched">Le nom est obligatoire.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="sCategory">Catégorie</label>
+            <input id="sCategory" pInputText formControlName="category" list="supply-categories" placeholder="Ex: Mèches" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+                <label for="sPrice">Prix unitaire (TND) <span class="text-red-500">*</span></label>
+                <p-inputNumber inputId="sPrice" formControlName="price" [min]="0" [minFractionDigits]="0" [maxFractionDigits]="3" styleClass="w-full" inputStyleClass="w-full" />
+            </div>
+            <div class="flex flex-col gap-1">
+                <label for="sQty">Quantité <span class="text-red-500">*</span></label>
+                <p-inputNumber inputId="sQty" formControlName="quantity" [min]="0" [showButtons]="true" styleClass="w-full" inputStyleClass="w-full" />
+            </div>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label>Statut</label>
+            <p-selectbutton [options]="supplyStatusOptions" formControlName="status" optionLabel="label" optionValue="value" [allowEmpty]="false" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="sPlaces">Emplacements</label>
+            <input id="sPlaces" pInputText formControlName="emplacements" placeholder="Séparés par des virgules. Ex: Tiroir 3" />
+        </div>
+    </form>
+    <ng-template #footer>
+        <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="supplyDialog = false" />
+        <p-button label="Enregistrer" icon="pi pi-check" (onClick)="saveSupply()" />
+    </ng-template>
+</p-dialog>
+
+<!-- ===== Move dialog ===== -->
+<p-dialog [(visible)]="moveDialog" [modal]="true" [style]="{ width: '420px' }" header="Déplacer la fourniture">
+    <div class="flex flex-col gap-3" *ngIf="moving">
+        <p class="m-0">
+            <b>{{ moving.name }}</b> : {{ statusLabel(moving.status) }} → <b>{{ statusLabel(moving.status === 'SHOP' ? 'INVENTORY' : 'SHOP') }}</b>
+        </p>
+        <label for="moveQty">Quantité à déplacer (max {{ moving.quantity }})</label>
+        <p-inputNumber inputId="moveQty" [(ngModel)]="moveQuantity" [min]="1" [max]="moving.quantity" [showButtons]="true" styleClass="w-full" inputStyleClass="w-full" />
+    </div>
+    <ng-template #footer>
+        <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="moveDialog = false" />
+        <p-button label="Déplacer" icon="pi pi-arrow-right-arrow-left" (onClick)="confirmMove()" />
+    </ng-template>
+</p-dialog>
