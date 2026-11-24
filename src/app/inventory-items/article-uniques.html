@@ -1,0 +1,105 @@
+<p-toast />
+<p-confirmDialog [style]="{ width: '420px' }" />
+
+<div class="card">
+    <div class="page-head">
+        <div>
+            <h2 class="m-0">Articles uniques</h2>
+            <small class="text-surface-500">Serrures maison, serrures voiture, neimans… chaque pièce suivie une par une, avec sa photo.</small>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <p-button label="Catégories" icon="pi pi-tags" severity="secondary" [outlined]="true" (onClick)="categoriesDialog = true" />
+            <p-button label="Emplacements" icon="pi pi-map-marker" severity="secondary" [outlined]="true" (onClick)="locationsDialog = true" />
+            <p-button *ngIf="isAdmin" label="Nouvel article unique" icon="pi pi-plus" (onClick)="open()" />
+        </div>
+    </div>
+
+    <div class="worth-row">
+        <div class="worth-card">
+            <small>Articles affichés</small>
+            <strong>{{ filtered.length }} / {{ items.length }}</strong>
+        </div>
+        <div class="worth-card total">
+            <small>Valeur (prix cumulé)</small>
+            <strong>{{ worth | number: '1.3-3' }} TND</strong>
+        </div>
+    </div>
+
+    <div class="filters">
+        <input pInputText placeholder="Rechercher (nom, catégorie, emplacement)…" [(ngModel)]="search" aria-label="Rechercher" />
+        <p-select [options]="categories" [(ngModel)]="categoryFilter" placeholder="Toutes les catégories" [showClear]="true" [filter]="true" appendTo="body" ariaLabel="Filtrer par catégorie" />
+        <p-select [options]="locations" [(ngModel)]="locationFilter" placeholder="Tous les emplacements" [showClear]="true" [filter]="true" appendTo="body" ariaLabel="Filtrer par emplacement" />
+    </div>
+
+    <ng-container *ngFor="let g of groups">
+        <h3 class="group-title">
+            <i class="pi pi-tag"></i> {{ g.category }} <small>{{ g.items.length }}</small>
+        </h3>
+        <div class="unique-grid">
+            <div class="unique-card" *ngFor="let u of g.items">
+                <img [src]="u.image || fallbackImage" (error)="onImgError($event)" [alt]="u.name" class="unique-img" />
+                <div class="unique-body">
+                    <strong class="unique-name">{{ u.name }}</strong>
+                    <span class="unique-field"><span>Catégorie</span>{{ u.category || '—' }}</span>
+                    <span class="unique-field"><span>Prix</span><b>{{ u.price | number: '1.3-3' }} TND</b></span>
+                    <span class="unique-field"><span>Emplacements</span></span>
+                    <div class="chips">
+                        <p-tag *ngFor="let e of u.emplacements" [value]="e" severity="secondary" icon="pi pi-map-marker" />
+                        <small *ngIf="!u.emplacements?.length" class="text-surface-500">—</small>
+                    </div>
+                </div>
+                <div class="unique-actions" *ngIf="isAdmin">
+                    <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" (onClick)="open(u)" ariaLabel="Modifier" />
+                    <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true" (onClick)="remove(u)" ariaLabel="Supprimer" />
+                </div>
+            </div>
+        </div>
+    </ng-container>
+    <p *ngIf="!filtered.length" class="text-center text-surface-500 py-6">Aucun article unique.</p>
+</div>
+
+<p-dialog [(visible)]="categoriesDialog" [modal]="true" [style]="{ width: '520px' }" header="Catégories des articles uniques" (onHide)="onOptionsChanged()">
+    <app-options-manager *ngIf="categoriesDialog" type="UNIQUE_CATEGORY" hint="Ex: Serrure maison, Neiman" />
+</p-dialog>
+<p-dialog [(visible)]="locationsDialog" [modal]="true" [style]="{ width: '520px' }" header="Emplacements" (onHide)="onOptionsChanged()">
+    <app-options-manager *ngIf="locationsDialog" type="LOCATION" hint="Ex: Vitrine, Étagère A2" />
+</p-dialog>
+
+<p-dialog [(visible)]="dialog" [modal]="true" [style]="{ width: '520px' }" [header]="editingId ? 'Modifier l’article unique' : 'Nouvel article unique'">
+    <form [formGroup]="form" class="flex flex-col gap-3" (ngSubmit)="save()">
+        <div class="image-picker">
+            <img [src]="form.value.image || fallbackImage" alt="Aperçu" />
+            <div class="flex flex-col gap-2">
+                <label class="p-button p-button-outlined p-button-sm cursor-pointer">
+                    <i class="pi pi-image mr-2"></i>Choisir une image
+                    <input type="file" accept="image/*" hidden (change)="onImageSelected($event)" />
+                </label>
+                <p-button *ngIf="form.value.image" label="Retirer" size="small" severity="secondary" [text]="true" (onClick)="form.patchValue({ image: '' })" />
+            </div>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="uName">Nom <span class="text-red-500">*</span></label>
+            <input id="uName" pInputText formControlName="name" placeholder="Ex: Serrure Vachette 3 points" />
+            <small class="text-red-500" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">Le nom est obligatoire.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="uCategory">Catégorie</label>
+            <p-select inputId="uCategory" formControlName="category" [options]="categories" placeholder="Choisir une catégorie" [showClear]="true" [filter]="true" appendTo="body" styleClass="w-full" />
+            <small class="text-surface-500" *ngIf="!categories.length">Aucune catégorie : créez-en via le bouton « Catégories ».</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="uPrice">Prix (TND) <span class="text-red-500">*</span></label>
+            <p-inputNumber inputId="uPrice" formControlName="price" [min]="0" [minFractionDigits]="0" [maxFractionDigits]="3" styleClass="w-full" inputStyleClass="w-full" />
+            <small class="text-red-500" *ngIf="form.get('price')?.invalid && form.get('price')?.touched">Le prix est obligatoire.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="uPlaces">Emplacements</label>
+            <p-multiselect inputId="uPlaces" formControlName="emplacements" [options]="locations" placeholder="Choisir un ou plusieurs emplacements" display="chip" [filter]="true" appendTo="body" styleClass="w-full" />
+            <small class="text-surface-500" *ngIf="!locations.length">Aucun emplacement : créez-en via le bouton « Emplacements ».</small>
+        </div>
+    </form>
+    <ng-template #footer>
+        <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="dialog = false" />
+        <p-button label="Enregistrer" icon="pi pi-check" (onClick)="save()" />
+    </ng-template>
+</p-dialog>

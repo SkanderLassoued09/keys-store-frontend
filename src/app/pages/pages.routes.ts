@@ -15,6 +15,9 @@ import { EmployeeDashboard } from '@/employee-dashboard/employee-dashboard';
 import { BusinessDashboard } from '@/business-dashboard/business-dashboard';
 import { UsersPage } from '@/users/users';
 import { adminGuard } from '@/guards/admin.guard';
+import { ArticleUniquesPage } from '@/inventory-items/article-uniques';
+import { ShopSuppliesPage } from '@/inventory-items/shop-supplies';
+import { EmplacementsPage } from '@/inventory-items/emplacements-page';
 
 export default [
     { path: 'documentation', component: Documentation },
@@ -31,6 +34,9 @@ export default [
     { path: 'employee-dashboard', component: EmployeeDashboard, canActivate: [adminGuard] },
     { path: 'business-dashboard', component: BusinessDashboard, canActivate: [adminGuard] },
     { path: 'users', component: UsersPage, canActivate: [adminGuard] },
+    { path: 'articles-uniques', component: ArticleUniquesPage, canActivate: [adminGuard] },
+    { path: 'fournitures-atelier', component: ShopSuppliesPage, canActivate: [adminGuard] },
+    { path: 'emplacements', component: EmplacementsPage, canActivate: [adminGuard] },
     { path: 'employee-ledger', component: EmployeeLedgerPage },
     { path: 'work-task', component: WorkTaskPage },
     { path: 'empty', component: Empty },

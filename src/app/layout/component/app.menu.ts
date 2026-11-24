@@ -78,6 +78,13 @@ export class AppMenu implements OnInit {
                 ]
             },
             {
+                label: 'Stock atelier',
+                items: [
+                    { label: 'Articles uniques', icon: 'pi pi-fw pi-key', routerLink: ['/pages/articles-uniques'] },
+                    { label: 'Fournitures atelier', icon: 'pi pi-fw pi-wrench', routerLink: ['/pages/fournitures-atelier'] }
+                ]
+            },
+            {
                 label: 'Tâches',
                 items: [{ label: 'Tableau des tâches', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/work-task'] }]
             },
@@ -85,7 +92,8 @@ export class AppMenu implements OnInit {
                 label: 'Paramètres',
                 items: [
                     { label: 'Utilisateurs & accès', icon: 'pi pi-fw pi-users', routerLink: ['/pages/users'] },
-                    { label: 'Catégories & sous-catégories', icon: 'pi pi-fw pi-images', routerLink: ['/pages/category'] }
+                    { label: 'Catégories & sous-catégories', icon: 'pi pi-fw pi-images', routerLink: ['/pages/category'] },
+                    { label: 'Emplacements', icon: 'pi pi-fw pi-map-marker', routerLink: ['/pages/emplacements'] }
                 ]
             }
         ];

@@ -100,8 +100,6 @@
     </ng-template>
 </p-table>
 
-<app-inventory-items />
-
 <!-- ORDER DIALOG -->
 <p-dialog [(visible)]="orderDialog" [style]="{ width: '700px' }" [header]="getDialogTitle()" [modal]="true" [closable]="true" styleClass="order-dialog">
     <form [formGroup]="orderForm" class="order-form" (ngSubmit)="saveOrder()">

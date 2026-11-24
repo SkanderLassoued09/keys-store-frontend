@@ -3,6 +3,7 @@ import { ButtonModule, Button } from 'primeng/button';
 import { ConfirmDialog, ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputNumber, InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { InventoryItemsApi } from '@/inventory-items/inventory-items.api';
 import { Dialog, DialogModule } from 'primeng/dialog';
 import { Rating, RatingModule } from 'primeng/rating';
 import { Table, TableModule } from 'primeng/table';
@@ -104,6 +105,9 @@ export class Article {
     // calls made later in ngOnInit (which is NOT an injection context).
     private readonly destroyRef = inject(DestroyRef);
     private readonly articleApi = inject(ArticleService);
+    private readonly inventoryApi = inject(InventoryItemsApi);
+    // Managed emplacements (Paramètres → Emplacements).
+    locations: string[] = [];
     private readonly messages = inject(MessageService);
 
     // ===== Families (nom de famille) =====
@@ -215,6 +219,7 @@ export class Article {
     }
 
     ngOnInit() {
+        this.inventoryApi.options('LOCATION').subscribe((r) => (this.locations = r.map((o) => o.name)));
         this.store.dispatch(ArticleAction.loadArticle());
         this.store.dispatch(CategoryActions.loadCategories());
         this.store.dispatch(SubCategoryActions.loadSubCategories({}));

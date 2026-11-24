@@ -235,7 +235,8 @@
             <div class="form-row">
                 <div class="form-field">
                     <label for="emplacement">Emplacement</label>
-                    <input id="emplacement" type="text" pInputText formControlName="emplacement" placeholder="Ex: Rayon A, Étagère 3" />
+                    <p-select inputId="emplacement" formControlName="emplacement" [options]="locations" placeholder="Choisir un emplacement" [showClear]="true" [filter]="true" appendTo="body" styleClass="w-full" />
+                    <small class="text-surface-500" *ngIf="!locations.length">Aucun emplacement : créez-en dans Paramètres → Emplacements.</small>
                 </div>
             </div>
 

@@ -1,0 +1,166 @@
+<p-toast />
+<p-confirmDialog [style]="{ width: '420px' }" />
+
+<div class="card">
+    <div class="page-head">
+        <div>
+            <h2 class="m-0">Fournitures atelier</h2>
+            <small class="text-surface-500">Consommables (mèches…) suivis en quantité, en inventaire ou en boutique.</small>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <p-button label="Catégories" icon="pi pi-tags" severity="secondary" [outlined]="true" (onClick)="categoriesDialog = true" />
+            <p-button label="Emplacements" icon="pi pi-map-marker" severity="secondary" [outlined]="true" (onClick)="locationsDialog = true" />
+            <p-button *ngIf="isAdmin" label="Nouvelle fourniture" icon="pi pi-plus" (onClick)="open()" />
+        </div>
+    </div>
+
+    <div class="worth-row" *ngIf="worth">
+        <div class="worth-card">
+            <small>En inventaire ({{ worth.supplies.inventory.quantity }} u.)</small>
+            <strong>{{ worth.supplies.inventory.value | number: '1.3-3' }} TND</strong>
+        </div>
+        <div class="worth-card">
+            <small>En boutique ({{ worth.supplies.shop.quantity }} u.)</small>
+            <strong>{{ worth.supplies.shop.value | number: '1.3-3' }} TND</strong>
+        </div>
+        <div class="worth-card total">
+            <small>Valeur totale (prix × quantité)</small>
+            <strong>{{ worth.supplies.value | number: '1.3-3' }} TND</strong>
+        </div>
+        <div class="worth-card">
+            <small>Valeur de la sélection filtrée</small>
+            <strong>{{ filteredWorth | number: '1.3-3' }} TND</strong>
+        </div>
+    </div>
+
+    <div class="filters">
+        <input pInputText placeholder="Rechercher (nom, catégorie, emplacement)…" [(ngModel)]="search" aria-label="Rechercher" />
+        <p-selectbutton [options]="statusOptions" [(ngModel)]="statusFilter" optionLabel="label" optionValue="value" [allowEmpty]="false" ariaLabel="Filtrer par statut" />
+        <p-select [options]="categories" [(ngModel)]="categoryFilter" placeholder="Toutes les catégories" [showClear]="true" [filter]="true" appendTo="body" ariaLabel="Filtrer par catégorie" />
+        <p-select [options]="locations" [(ngModel)]="locationFilter" placeholder="Tous les emplacements" [showClear]="true" [filter]="true" appendTo="body" ariaLabel="Filtrer par emplacement" />
+    </div>
+
+    <p-table [value]="filtered" [rowHover]="true" dataKey="_id" rowGroupMode="subheader" groupRowsBy="category" sortField="category" [sortOrder]="1" [tableStyle]="{ 'min-width': '60rem' }">
+        <ng-template #header>
+            <tr>
+                <th>Nom</th>
+                <th>Statut</th>
+                <th>Quantité</th>
+                <th>Prix unitaire</th>
+                <th>Valeur</th>
+                <th>Emplacements</th>
+                <th style="width: 15rem">Actions</th>
+            </tr>
+        </ng-template>
+        <ng-template #groupheader let-s>
+            <tr class="group-row">
+                <td colspan="7">
+                    <i class="pi pi-tag mr-2"></i><b>{{ s.category || 'Sans catégorie' }}</b>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template #body let-s>
+            <tr>
+                <td>
+                    <strong>{{ s.name }}</strong>
+                </td>
+                <td><p-tag [value]="statusLabel(s.status)" [severity]="s.status === 'SHOP' ? 'info' : 'secondary'" /></td>
+                <td>
+                    <div class="flex items-center gap-1">
+                        <p-button icon="pi pi-minus" size="small" [text]="true" [rounded]="true" (onClick)="adjust(s, -1)" [disabled]="s.quantity <= 0" ariaLabel="Retirer 1" />
+                        <b class="qty">{{ s.quantity }}</b>
+                        <p-button icon="pi pi-plus" size="small" [text]="true" [rounded]="true" (onClick)="adjust(s, 1)" ariaLabel="Ajouter 1" />
+                    </div>
+                </td>
+                <td>{{ s.price | number: '1.3-3' }} TND</td>
+                <td>
+                    <b>{{ s.price * s.quantity | number: '1.3-3' }} TND</b>
+                </td>
+                <td>
+                    <div class="chips">
+                        <p-tag *ngFor="let e of s.emplacements" [value]="e" severity="secondary" icon="pi pi-map-marker" />
+                    </div>
+                </td>
+                <td>
+                    <div class="flex gap-1">
+                        <p-button
+                            [label]="s.status === 'SHOP' ? 'Vers inventaire' : 'Vers boutique'"
+                            [icon]="s.status === 'SHOP' ? 'pi pi-arrow-left' : 'pi pi-arrow-right'"
+                            size="small"
+                            severity="info"
+                            [outlined]="true"
+                            (onClick)="openMove(s)"
+                            [disabled]="s.quantity <= 0"
+                        />
+                        <p-button *ngIf="isAdmin" icon="pi pi-pencil" size="small" [text]="true" [rounded]="true" (onClick)="open(s)" ariaLabel="Modifier" />
+                        <p-button *ngIf="isAdmin" icon="pi pi-trash" size="small" severity="danger" [text]="true" [rounded]="true" (onClick)="remove(s)" ariaLabel="Supprimer" />
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+            <tr>
+                <td colspan="7" class="text-center text-surface-500 py-6">Aucune fourniture.</td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<p-dialog [(visible)]="categoriesDialog" [modal]="true" [style]="{ width: '520px' }" header="Catégories des fournitures" (onHide)="onOptionsChanged()">
+    <app-options-manager *ngIf="categoriesDialog" type="SUPPLY_CATEGORY" hint="Ex: Mèches, Lames" />
+</p-dialog>
+<p-dialog [(visible)]="locationsDialog" [modal]="true" [style]="{ width: '520px' }" header="Emplacements" (onHide)="onOptionsChanged()">
+    <app-options-manager *ngIf="locationsDialog" type="LOCATION" hint="Ex: Tiroir 3, Atelier" />
+</p-dialog>
+
+<p-dialog [(visible)]="dialog" [modal]="true" [style]="{ width: '520px' }" [header]="editingId ? 'Modifier la fourniture' : 'Nouvelle fourniture'">
+    <form [formGroup]="form" class="flex flex-col gap-3" (ngSubmit)="save()">
+        <div class="flex flex-col gap-1">
+            <label for="sName">Nom <span class="text-red-500">*</span></label>
+            <input id="sName" pInputText formControlName="name" placeholder="Ex: Mèche 2.5mm" />
+            <small class="text-red-500" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">Le nom est obligatoire.</small>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="sCategory">Catégorie</label>
+            <p-select inputId="sCategory" formControlName="category" [options]="categories" placeholder="Choisir une catégorie" [showClear]="true" [filter]="true" appendTo="body" styleClass="w-full" />
+            <small class="text-surface-500" *ngIf="!categories.length">Aucune catégorie : créez-en via le bouton « Catégories ».</small>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+                <label for="sPrice">Prix unitaire (TND) <span class="text-red-500">*</span></label>
+                <p-inputNumber inputId="sPrice" formControlName="price" [min]="0" [minFractionDigits]="0" [maxFractionDigits]="3" styleClass="w-full" inputStyleClass="w-full" />
+            </div>
+            <div class="flex flex-col gap-1">
+                <label for="sQty">Quantité <span class="text-red-500">*</span></label>
+                <p-inputNumber inputId="sQty" formControlName="quantity" [min]="0" [showButtons]="true" styleClass="w-full" inputStyleClass="w-full" />
+            </div>
+        </div>
+        <div class="flex flex-col gap-1">
+            <label>Statut</label>
+            <p-selectbutton [options]="formStatusOptions" formControlName="status" optionLabel="label" optionValue="value" [allowEmpty]="false" />
+        </div>
+        <div class="flex flex-col gap-1">
+            <label for="sPlaces">Emplacements</label>
+            <p-multiselect inputId="sPlaces" formControlName="emplacements" [options]="locations" placeholder="Choisir un ou plusieurs emplacements" display="chip" [filter]="true" appendTo="body" styleClass="w-full" />
+            <small class="text-surface-500" *ngIf="!locations.length">Aucun emplacement : créez-en via le bouton « Emplacements ».</small>
+        </div>
+    </form>
+    <ng-template #footer>
+        <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="dialog = false" />
+        <p-button label="Enregistrer" icon="pi pi-check" (onClick)="save()" />
+    </ng-template>
+</p-dialog>
+
+<p-dialog [(visible)]="moveDialog" [modal]="true" [style]="{ width: '420px' }" header="Déplacer la fourniture">
+    <div class="flex flex-col gap-3" *ngIf="moving">
+        <p class="m-0">
+            <b>{{ moving.name }}</b> : {{ statusLabel(moving.status) }} → <b>{{ statusLabel(moving.status === 'SHOP' ? 'INVENTORY' : 'SHOP') }}</b>
+        </p>
+        <label for="moveQty">Quantité à déplacer (max {{ moving.quantity }})</label>
+        <p-inputNumber inputId="moveQty" [(ngModel)]="moveQuantity" [min]="1" [max]="moving.quantity" [showButtons]="true" styleClass="w-full" inputStyleClass="w-full" />
+    </div>
+    <ng-template #footer>
+        <p-button label="Annuler" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="moveDialog = false" />
+        <p-button label="Déplacer" icon="pi pi-arrow-right-arrow-left" (onClick)="confirmMove()" />
+    </ng-template>
+</p-dialog>

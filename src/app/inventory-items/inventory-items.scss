@@ -1,5 +1,33 @@
-.inv-items {
-    margin-top: 2rem;
+.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    input {
+        min-width: 16rem;
+    }
+}
+.group-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.25rem 0 0.75rem;
+    font-size: 1.05rem;
+    small {
+        color: var(--text-color-secondary);
+        font-weight: 400;
+    }
+}
+.group-row td {
+    background: var(--surface-ground);
 }
 
 .worth-row {

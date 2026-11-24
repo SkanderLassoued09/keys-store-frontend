@@ -25,7 +25,6 @@ import { Store } from '@ngrx/store';
 import * as OrderActions from '../store/order-service-store/order.service.actions';
 import * as OrderSelectors from '../store/order-service-store/order.service.selectors';
 import * as SettingsActions from '../store/settings-store/settings.actions';
-import { InventoryItems } from '../inventory-items/inventory-items';
 import * as SettingsSelectors from '../store/settings-store/settings.selectors';
 import { displayEmployee, refId, WorkOrder } from '../store/order-service-store/work-order.model';
 // import * as EmployeeActions from '../store/employee-store/employee.actions';
@@ -34,7 +33,6 @@ import { displayEmployee, refId, WorkOrder } from '../store/order-service-store/
     selector: 'app-order-list',
     standalone: true,
     imports: [
-        InventoryItems,
         TableModule,
         Dialog,
         SelectModule,
